@@ -234,14 +234,20 @@ test.describe('device conditions', () => {
     expect(ok).toBe(true);
   });
 
-  test('still playable offline after the first load', async ({ page, context }) => {
+  test('still playable offline after the first load', async ({ page, context, browserName }) => {
     await page.goto('/');
     await ready(page);
     await page.waitForFunction(() => navigator.serviceWorker?.controller !== null, undefined, {
       timeout: 20_000,
     });
     await context.setOffline(true);
-    await page.reload();
+    await page.reload().catch((err) => {
+      // WebKit's driver throws "internal error" on a reload issued while
+      // offline even when the navigation itself succeeds from the service
+      // worker cache (microsoft/playwright#34402, unresolved upstream). The
+      // assertions below still catch a genuinely broken service worker.
+      if (browserName !== 'webkit') throw err;
+    });
     await expect(page.locator('#overlay h1')).toHaveText('BERLIN-QUEST');
     await ready(page);
     await context.setOffline(false);
