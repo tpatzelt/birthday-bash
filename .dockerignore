@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.github
+.scratch
+docs
+reports
+tests
+test-results
+playwright-report
+playwright.config.ts
+vitest.config.ts
+eslint.config.js
+*.md

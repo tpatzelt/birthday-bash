@@ -1,0 +1,18 @@
+{
+  "name": "BERLIN-QUEST",
+  "short_name": "BERLIN-QUEST",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07060F",
+  "theme_color": "#07060F",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

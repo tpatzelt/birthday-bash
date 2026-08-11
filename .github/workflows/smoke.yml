@@ -1,0 +1,49 @@
+name: smoke
+
+on:
+  workflow_run:
+    workflows: [build-and-publish]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Live URL to smoke
+        required: false
+
+jobs:
+  smoke:
+    name: smoke the live URL
+    runs-on: ubuntu-latest
+    # SMOKE_URL is a repository secret: the real hostname never appears in a
+    # tracked file (DEPLOY.md).
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: resolve target
+        id: target
+        env:
+          INPUT_URL: ${{ github.event.inputs.url }}
+          SECRET_URL: ${{ secrets.SMOKE_URL }}
+        run: |
+          URL="${INPUT_URL:-$SECRET_URL}"
+          if [ -z "$URL" ]; then
+            echo "::warning::no SMOKE_URL secret and no url input — skipping"
+            echo "skip=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "url=$URL" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: give the homelab a moment to pull
+        if: steps.target.outputs.skip != '1'
+        run: sleep 45
+
+      - name: smoke:live
+        if: steps.target.outputs.skip != '1'
+        run: npm run smoke:live -- "${{ steps.target.outputs.url }}" "$(git rev-parse --short HEAD)"

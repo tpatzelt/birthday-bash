@@ -1,0 +1,17 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`replay > katjes-casual replays to a stable state hash 1`] = `"4944cd09"`;
+
+exports[`replay > katjes-win replays to a stable state hash 1`] = `"e57d3405"`;
+
+exports[`replay > kayak-casual replays to a stable state hash 1`] = `"8a56120f"`;
+
+exports[`replay > kayak-win replays to a stable state hash 1`] = `"f3d3ce1f"`;
+
+exports[`replay > pfand-casual replays to a stable state hash 1`] = `"8798cd4c"`;
+
+exports[`replay > pfand-win replays to a stable state hash 1`] = `"217fd9ae"`;
+
+exports[`replay > sisyphos-casual replays to a stable state hash 1`] = `"3b5858be"`;
+
+exports[`replay > sisyphos-win replays to a stable state hash 1`] = `"ce9e5ece"`;

@@ -15,9 +15,25 @@ beer. Every design decision below follows from that sentence.
 
 ## Status
 
-**Design phase.** No application code exists yet — this repo currently holds the
-design, architecture, test strategy, and delivery plan. Implementation starts at
-milestone M0 in [docs/PLAN.md](docs/PLAN.md).
+**Playable, tested, and buildable.** All four levels, the mercy rules, the
+reveal, the audio, the offline shell and the deployment image are in. What is
+left is on real hardware and on the homelab, not in the code:
+
+- [ ] Homelab: compose stack, Caddy handle block, cloudflared ingress + `tunnel route dns`
+- [ ] Played end to end on a real iPhone and a real Android (TESTING.md §11)
+- [ ] Emoji glyph check on both — the atlas falls back to hand-drawn vectors for
+      anything the font can't render, but which glyphs *read* is a human call
+- [ ] Confirm date, time and meeting point in `src/config/gift.ts`
+
+| Gate | Where | Now |
+|---|---|---|
+| `perfect` bot wins every level | `npm test` | 100 % |
+| `casual` ≥ 85 % | `npm test` | 90–100 % |
+| `tipsy` ≥ 50 % | `npm test` | 64–100 % |
+| JS bundle ≤ 150 KB gzipped | `npm run e2e` | ~20 KB |
+| Full playthrough to the reveal | `npm run e2e` | green against the shipped image |
+
+Current numbers per level: [reports/balance.md](reports/balance.md).
 
 ## Documents
 
@@ -41,12 +57,31 @@ milestone M0 in [docs/PLAN.md](docs/PLAN.md).
 - **Language** — game copy is German (du-form, Berlin slang). Repo docs and code
   are English, matching the homelab repo.
 
-## Once there is code
+## Commands
 
 ```bash
 npm run dev            # Vite dev server + debug harness at /__dev
-npm test               # unit + determinism + bot-beatability (headless, fast)
+npm test               # unit + determinism + bot-beatability + fuzz (headless, ~60 s)
 npm run balance        # bot win-rate/duration report -> reports/balance.md
 npm run e2e            # Playwright against the production Docker image
 npm run preview:docker # build and run the real shipped image on :8080
+npm run smoke:live -- https://jonas.example.com   # after deploy, and on the morning
 ```
+
+`npm run e2e` drives the real Docker image on a phone viewport, in Chromium and
+WebKit. WebKit needs system libraries (`sudo npx playwright install-deps
+webkit`); without them run `E2E_SKIP_WEBKIT=1 npm run e2e` — CI runs both.
+
+## The layout
+
+```
+src/core/     pure, deterministic simulation — no DOM, no Math.random, no clock
+src/render/   canvas: scenes, HUD, pooled particles, emoji atlas + vector fallbacks
+src/audio/    WebAudio: one continuous 126 BPM track, layers per level
+src/shell/    boot, overlay cards, pointer input, storage, the /__dev harness
+src/config/   tuning.ts (every constant) and gift.ts (the reveal, base64)
+tests/tapes/  input tapes: drop one in and it is a regression test
+```
+
+The development loop: play in `/__dev` → **Record** → drop `tape.json` into
+`tests/tapes/` → it is now a permanent test. See [docs/TESTING.md](docs/TESTING.md).

@@ -1,0 +1,359 @@
+/*
+ * Berlin club flyer, not arcade (DESIGN.md §7).
+ *
+ * Plain heavy grotesque, uppercase, wide letter-spacing, hairline rules,
+ * enormous margins, one hot accent on near-black. Committed single theme: this
+ * is a screen in a dark room, not a document.
+ */
+
+:root {
+  --ink: #07060f;
+  --panel: #12102a;
+  --pink: #ff2d6f;
+  --amber: #ffb300;
+  --teal: #23d3c4;
+  --haze: #b9b4d6;
+  --chalk: #f3f0ff;
+
+  --display: ui-sans-serif, system-ui, 'Helvetica Neue', Arial, sans-serif;
+  --numerals: ui-monospace, 'SF Mono', 'Roboto Mono', Menlo, monospace;
+
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--haze);
+  font-family: var(--display);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+}
+
+#game {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+/* --- overlay cards ------------------------------------------------------- */
+
+#overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  padding: calc(34px + var(--safe-t)) 30px calc(34px + var(--safe-b));
+  pointer-events: none;
+}
+
+#overlay.on {
+  display: flex;
+}
+
+#overlay > * {
+  pointer-events: auto;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--pink);
+  margin: 0 0 18px;
+}
+
+h1 {
+  font-size: clamp(34px, 11vw, 46px);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1.02;
+  text-transform: uppercase;
+  color: var(--chalk);
+  margin: 0 0 14px;
+}
+
+h2 {
+  font-size: clamp(22px, 7vw, 30px);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  color: var(--chalk);
+  margin: 0 0 12px;
+}
+
+p {
+  font-size: 15px;
+  line-height: 1.55;
+  margin: 0 0 12px;
+  color: var(--haze);
+}
+
+.lede {
+  font-size: 17px;
+  color: var(--chalk);
+}
+
+.rule {
+  height: 1px;
+  background: color-mix(in srgb, var(--haze) 30%, transparent);
+  margin: 22px 0;
+}
+
+.spacer {
+  flex: 1;
+}
+
+button {
+  display: block;
+  width: 100%;
+  margin: 10px 0 0;
+  padding: 17px 20px;
+  border: 1px solid var(--chalk);
+  border-radius: 0;
+  background: transparent;
+  color: var(--chalk);
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 120ms linear, color 120ms linear;
+}
+
+button.primary {
+  background: var(--pink);
+  border-color: var(--pink);
+  color: var(--ink);
+}
+
+button.quiet {
+  border-color: color-mix(in srgb, var(--haze) 40%, transparent);
+  color: var(--haze);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  padding: 14px 18px;
+}
+
+button:active {
+  background: var(--chalk);
+  color: var(--ink);
+}
+
+button.primary:active {
+  background: var(--chalk);
+}
+
+.hint {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--haze) 70%, transparent);
+}
+
+.num {
+  font-family: var(--numerals);
+  font-variant-numeric: tabular-nums;
+}
+
+.levels {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.levels button {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  padding: 13px 8px;
+}
+
+.levels button[disabled] {
+  opacity: 0.3;
+  border-color: color-mix(in srgb, var(--haze) 30%, transparent);
+}
+
+/* --- the reveal ---------------------------------------------------------- */
+
+#overlay.reveal {
+  /* Two soft lens vignettes and a faint screen-door texture: the frame becomes
+     the inside of a VR headset (DESIGN.md §5). */
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    radial-gradient(58% 30% at 27% 42%, rgba(255, 45, 111, 0.16), transparent 70%),
+    radial-gradient(58% 30% at 73% 42%, rgba(35, 211, 196, 0.14), transparent 70%),
+    radial-gradient(120% 90% at 50% 50%, transparent 40%, rgba(7, 6, 15, 0.92) 100%),
+    var(--ink);
+}
+
+.build-line {
+  font-size: clamp(20px, 6.4vw, 26px);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--chalk);
+  margin: 0 0 14px;
+  min-height: 1.2em;
+}
+
+.gift-card {
+  border: 1px solid var(--pink);
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  padding: 26px 22px;
+  margin: 0 0 16px;
+}
+
+.gift-card h1 {
+  color: var(--pink);
+  margin-bottom: 6px;
+}
+
+.gift-card .city {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--chalk);
+  margin: 0 0 14px;
+}
+
+.gift-card .tagline {
+  font-style: italic;
+  color: var(--haze);
+  margin: 0;
+}
+
+.details {
+  border: 1px solid color-mix(in srgb, var(--haze) 26%, transparent);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.details dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 9px 14px;
+}
+
+.details dt {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--pink);
+  padding-top: 3px;
+}
+
+.details dd {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--chalk);
+  white-space: pre-line;
+}
+
+.outro {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: color-mix(in srgb, var(--haze) 75%, transparent);
+  text-transform: uppercase;
+}
+
+/* --- rotate hint --------------------------------------------------------- */
+
+#rotate {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--ink);
+  z-index: 20;
+  text-align: center;
+  padding: 24px;
+}
+
+#rotate[hidden] {
+  display: none;
+}
+
+#rotate.on {
+  display: flex;
+}
+
+#rotate p {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--chalk);
+  margin: 0;
+}
+
+#rotate .sub {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  color: var(--haze);
+  font-weight: 400;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.fade-in {
+  animation: fade 260ms ease-out both;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

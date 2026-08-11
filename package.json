@@ -1,0 +1,33 @@
+{
+  "name": "birthday-bash",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit false --emitDeclarationOnly false --pretty",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "balance": "tsx scripts/balance.ts",
+    "e2e": "npm run build && playwright test",
+    "e2e:visual": "npm run build && VISUAL=1 playwright test tests/e2e/visual.spec.ts --update-snapshots",
+    "preview:docker": "bash scripts/preview-docker.sh",
+    "smoke:live": "tsx scripts/smoke-live.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "@playwright/test": "^1.49.1",
+    "@types/node": "^22.10.5",
+    "@typescript-eslint/eslint-plugin": "^8.19.1",
+    "@typescript-eslint/parser": "^8.19.1",
+    "eslint": "^9.18.0",
+    "happy-dom": "^16.5.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  }
+}

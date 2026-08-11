@@ -1,0 +1,90 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The required check. Everything else can be argued about; the game being
+  # completable cannot (TESTING.md §12).
+  beatability:
+    name: bot beatability
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: unit · determinism · replay · bots · fuzz
+        run: npm test
+
+  static:
+    name: typecheck + lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run lint
+
+  e2e:
+    name: e2e against the shipped image
+    runs-on: ubuntu-latest
+    needs: [beatability, static]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit
+      - name: build (for the bundle-size budget)
+        run: npm run build
+      - name: playwright
+        run: npm run e2e
+        env:
+          CI: '1'
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  balance:
+    name: balance report
+    runs-on: ubuntu-latest
+    needs: [beatability]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run balance -- --seeds 200
+      - name: fail if the committed report is stale
+        run: |
+          if ! git diff --quiet -- reports/balance.md; then
+            echo "::warning::reports/balance.md is out of date — regenerate and commit it alongside the tuning change"
+            git --no-pager diff -- reports/balance.md
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: balance
+          path: reports/balance.md
