@@ -43,7 +43,15 @@ async function main(): Promise<void> {
     'security headers present',
     'x-content-type-options missing',
   );
-  check((res.headers.get('x-robots-tag') ?? '').includes('noindex'), 'noindex (it is a gift, not a site)');
+  // The homelab's public Caddy block sends `none, noarchive, …`. Per the robots
+  // spec `none` is exactly `noindex, nofollow`, so accept either spelling —
+  // matching only the literal `noindex` fails a correctly-configured origin.
+  const robots = res.headers.get('x-robots-tag') ?? '';
+  check(
+    /\bnoindex\b/.test(robots) || /\bnone\b/.test(robots),
+    'noindex (it is a gift, not a site)',
+    robots || 'missing',
+  );
 
   const html = await res.text();
 
