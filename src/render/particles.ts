@@ -8,6 +8,7 @@
 
 import { forEachEvent, type BaseState, type GameEvent } from '../core/state.js';
 import { DT } from '../config/tuning.js';
+import { GOLD } from './palette.js';
 
 type Particle = {
   active: boolean;
@@ -169,6 +170,21 @@ export function consumeEvents(p: Particles, s: BaseState): void {
         break;
       case 'win':
         burst(p, e.x, e.y, 26, '#FFB300', 230);
+        break;
+      case 'knapp':
+        burst(p, e.x, e.y, 5, '#FFB300', 100);
+        break;
+      case 'dosendieb':
+        burst(p, e.x, e.y, 8, '#B9B4D6', 120);
+        break;
+      case 'golden':
+        burst(p, e.x, e.y, 18, GOLD, 190, 2);
+        break;
+      case 'flunker':
+        burst(p, e.x, e.y, 12, '#23D3C4', 150, 2);
+        break;
+      case 'wildlife':
+        burst(p, e.x, e.y, 6, '#23D3C4', 80);
         break;
       default:
         break;

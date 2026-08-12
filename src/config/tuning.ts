@@ -50,6 +50,12 @@ export const TUNING = {
       { kind: 'hund', w: 24, h: 16, weight: 0.28 },
       { kind: 'zaun', w: 30, h: 54, weight: 0.32 },
     ],
+    /** A jump clearing an obstacle by this little or less pops "Knapp!". */
+    knappMarginPx: 14,
+    /** Frames of no jump before a Dosendieb can steal an uncollected bottle. */
+    dosendiebIdleS: 3.5,
+    /** Rolled once per qualifying idle window, not guaranteed. */
+    dosendiebChance: 0.35,
   },
 
   sisyphos: {
@@ -70,6 +76,12 @@ export const TUNING = {
     shadesDurationMs: 3500,
     shadesR: 18,
     timeCapS: 120,
+    /** |vx| a bouncer needs at spawn to warrant a pre-emptive glance telegraph. */
+    bouncerFastThreshold: 105,
+    /** How far ahead of a fast bouncer's tell the glance frame shows. */
+    glanceLeadMs: 350,
+    /** Share of pickups that are the rarer Flunkerkarte instead of Sonnenbrille. */
+    flunkerShare: 0.35,
   },
 
   katjes: {
@@ -87,9 +99,16 @@ export const TUNING = {
     shareVeg: 0.27,
     shareBonus: 0.08,
     bonusValue: 3,
+    /** Carved OUT of shareBonus (must stay < shareBonus), not additive on top. */
+    shareGolden: 0.01,
+    goldenValue: 5,
     itemR: 15,
     catchBandTop: 26, // how far above the bag's y an item still counts as caught
     timeCapS: 150,
+    /** Kombo counter only shows once it reaches this many consecutive catches. */
+    comboShowAt: 2,
+    /** Squash/stretch amplitude on the Tüte when a vegetable is caught. */
+    veghitWobble: 0.18,
   },
 
   kayak: {
@@ -113,6 +132,14 @@ export const TUNING = {
     rockHitInvulnMs: 600,
     hullR: 15,
     timeCapS: 140,
+    /** Ambient cameo roll cadence, seconds. */
+    wildlifeIntervalMin: 3.0,
+    wildlifeIntervalMax: 6.0,
+    /** Cameo spawn chance at/below the Ruhe floor and at full Ruhe. */
+    wildlifeChanceLow: 0.05,
+    wildlifeChanceHigh: 0.6,
+    /** Below this Ruhe, cameos essentially never happen. */
+    wildlifeRuheFloor: 60,
   },
 
   mercy: {
@@ -129,6 +156,24 @@ export const TUNING = {
     bpm: 126,
     beatsPerBar: 4,
     masterGain: 0.55,
+  },
+
+  afterhour: {
+    /** Shared strikes pool across all four segments. */
+    strikesMax: 3,
+    /** Inflated per-segment life pool so a segment's own lives never end the run early. */
+    segmentExtraLives: 12,
+    /** Share of a segment's real goal that counts as "cleared" this loop. */
+    burstFractionStart: 0.55,
+    burstFractionStep: 0.06,
+    burstFractionMin: 0.22,
+    /** Density/speed ramps compound per loop, reusing the existing Mods plumbing. */
+    densityRampPerLoop: 0.1,
+    densityMulMax: 2.2,
+    speedRampPerLoop: 0.08,
+    speedMulMax: 1.9,
+    /** Hard cap so an automated run always terminates (20 minutes). */
+    hardFrameCap: 20 * 60 * 60,
   },
 } as const;
 

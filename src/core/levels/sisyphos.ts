@@ -21,9 +21,13 @@ export type Bouncer = {
   vx: number;
   /** Cosmetic: which way the silhouette faces. */
   phase: number;
+  /** Frames left of the pre-spawn glance telegraph on a fast bouncer. Cosmetic only. */
+  glanceLeft: number;
 };
 
-export type Shades = { active: boolean; x: number; wy: number; phase: number };
+export type PickupKind = 'shades' | 'flunker';
+
+export type Shades = { active: boolean; x: number; wy: number; phase: number; kind: PickupKind };
 
 export type SisyphosState = BaseState & {
   level: 'sisyphos';
@@ -57,9 +61,11 @@ export function screenY(wy: number, progressPx: number, h: number): number {
 export function create(seed: number, h: number, mods: Mods): SisyphosState {
   const base = makeBase('sisyphos', seed, h, mods, T.lives);
   const bouncers: Bouncer[] = new Array(BOUNCER_POOL);
-  for (let i = 0; i < BOUNCER_POOL; i++) bouncers[i] = { active: false, x: 0, wy: 0, vx: 0, phase: 0 };
+  for (let i = 0; i < BOUNCER_POOL; i++) {
+    bouncers[i] = { active: false, x: 0, wy: 0, vx: 0, phase: 0, glanceLeft: 0 };
+  }
   const shades: Shades[] = new Array(SHADES_POOL);
-  for (let i = 0; i < SHADES_POOL; i++) shades[i] = { active: false, x: 0, wy: 0, phase: 0 };
+  for (let i = 0; i < SHADES_POOL; i++) shades[i] = { active: false, x: 0, wy: 0, phase: 0, kind: 'shades' };
   return {
     ...base,
     level: 'sisyphos',
@@ -96,6 +102,10 @@ function spawnRow(s: SisyphosState, wy: number): void {
       const sp = randRange(s.rng, T.bouncerSpeedMin, T.bouncerSpeedMax) * s.mods.speedMul;
       b.vx = randBool(s.rng, 0.5) ? sp : -sp;
       b.phase = randInt(s.rng, 0, 3);
+      // Derived from the already-rolled speed — no extra RNG draw, so the tell
+      // is truthful (a fast bouncer really is fast) without shifting the seed's
+      // draw order for anything spawned after this row.
+      b.glanceLeft = sp >= T.bouncerFastThreshold ? msToFrames(T.glanceLeadMs) : 0;
       break;
     }
   }
@@ -109,6 +119,10 @@ function spawnShades(s: SisyphosState, wy: number): void {
     p.x = randRange(s.rng, 40, W - 40);
     p.wy = wy;
     p.phase = 0;
+    // Derived from the position roll already made above, not a second RNG
+    // draw: keeps the draw order (and every existing tape/snapshot) intact.
+    const frac = (p.x - 40) / (W - 80);
+    p.kind = frac < T.flunkerShare ? 'flunker' : 'shades';
     return;
   }
 }
@@ -146,6 +160,7 @@ export function step(s: SisyphosState, input: InputFrame): SisyphosState {
   for (let i = 0; i < s.bouncers.length; i++) {
     const b = s.bouncers[i];
     if (!b.active) continue;
+    if (b.glanceLeft > 0) b.glanceLeft--;
     b.x += b.vx * DT;
     if (b.x < T.bouncerR) {
       b.x = T.bouncerR;
@@ -180,7 +195,7 @@ export function step(s: SisyphosState, input: InputFrame): SisyphosState {
     if (circles(s.x, py, T.playerR, p.x, sy, T.shadesR)) {
       p.active = false;
       s.shadesLeft = msToFrames(T.shadesDurationMs);
-      emit(s, 'shades', p.x, sy, 0);
+      emit(s, p.kind === 'flunker' ? 'flunker' : 'shades', p.x, sy, 0);
     }
   }
 

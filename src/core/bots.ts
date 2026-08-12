@@ -9,6 +9,7 @@
 import { DT, W, TUNING, NO_MODS, type Mods } from '../config/tuning.js';
 import { clamp } from './collide.js';
 import { createLevel, frameCap, stepLevel, type AnyLevelState } from './game.js';
+import { create as createAfterhour, step as stepAfterhour, loopsSurvived } from './afterhour.js';
 import type { InputFrame, LevelId } from './input.js';
 import { makeInput } from './input.js';
 import { makeRng, rand, randRange, type Rng } from './rng.js';
@@ -493,6 +494,40 @@ export function runLevel(level: LevelId, seed: number, botName: BotName, opts: R
     nonFinite,
     state: s,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Afterhour: no win-rate gate (it is meant to eventually be unwinnable) — the
+// only invariants that matter are "it terminates" and "a floor of loops is
+// reachable", asserted in tests/core/afterhour.test.ts.
+// ---------------------------------------------------------------------------
+
+export type AfterhourRunResult = {
+  seed: number;
+  bot: BotName;
+  loops: number;
+  frames: number;
+  nonFinite: string | null;
+};
+
+export function runAfterhour(
+  seed: number,
+  botName: BotName,
+  opts: RunOptions & { frameCap?: number } = {},
+): AfterhourRunResult {
+  const h = opts.h ?? 780;
+  const s = createAfterhour(seed, h);
+  const bot = makeBot(botName, seed);
+  const cap = Math.min(opts.frameCap ?? TUNING.afterhour.hardFrameCap, TUNING.afterhour.hardFrameCap);
+  const scanEvery = opts.scanEvery ?? 0;
+  let nonFinite: string | null = null;
+
+  while (s.status === 'run' && s.frame < cap) {
+    stepAfterhour(s, botInput(bot, s.segment));
+    if (scanEvery > 0 && s.frame % scanEvery === 0 && !nonFinite) nonFinite = findNonFinite(s.segment);
+  }
+
+  return { seed, bot: botName, loops: loopsSurvived(s), frames: s.frame, nonFinite };
 }
 
 export function scoreOf(s: AnyLevelState): number {

@@ -14,9 +14,57 @@ import {
   worldYOf,
   type KayakState,
 } from '../../core/levels/kayak.js';
+import { forEachEvent } from '../../core/state.js';
 import { drawGlyph } from '../atlas.js';
 import { CHALK, HAZE, PINK, TEAL } from '../palette.js';
 import { verticalGradient, vignette } from './shared.js';
+
+// --- renderer-local ambient-cameo pool --------------------------------------
+type Cameo = { active: boolean; x: number; y: number; kind: number; life: number };
+const CAMEO_POOL = 3;
+const cameos: Cameo[] = Array.from({ length: CAMEO_POOL }, () => ({ active: false, x: 0, y: 0, kind: 0, life: 0 }));
+let cameoNext = 0;
+
+function spawnCameo(x: number, y: number, kind: number): void {
+  const c = cameos[cameoNext];
+  cameoNext = (cameoNext + 1) % CAMEO_POOL;
+  c.active = true;
+  c.x = x;
+  c.y = y;
+  c.kind = kind;
+  c.life = 40;
+}
+
+function drawCameos(ctx: CanvasRenderingContext2D): void {
+  for (const c of cameos) {
+    if (!c.active) continue;
+    c.life--;
+    if (c.life <= 0) {
+      c.active = false;
+      continue;
+    }
+    const t = c.life / 40;
+    ctx.globalAlpha = t < 0.6 ? t / 0.6 : 1;
+    ctx.strokeStyle = TEAL;
+    ctx.fillStyle = TEAL;
+    ctx.lineWidth = 2;
+    const rise = (1 - t) * 18;
+    if (c.kind === 0) {
+      // A fish arcing out of the water.
+      ctx.beginPath();
+      ctx.ellipse(c.x, c.y - rise, 9, 4, -0.4, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // A bird crossing in a shallow V.
+      ctx.beginPath();
+      ctx.moveTo(c.x - 10, c.y - rise + 4);
+      ctx.lineTo(c.x, c.y - rise - 3);
+      ctx.lineTo(c.x + 10, c.y - rise + 4);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+}
 
 /** The banks have to read as "not water" at a glance, in a dark room. */
 const BANK = '#16333A';
@@ -71,6 +119,11 @@ export function drawKayak(ctx: CanvasRenderingContext2D, s: KayakState, frame: n
     ctx.globalAlpha = 1;
     drawGlyph(ctx, 'rock', r.x, sy, r.r * 2.1, r.phase * 0.2);
   }
+
+  forEachEvent(s, (e) => {
+    if (e.type === 'wildlife') spawnCameo(e.x, e.y, e.a);
+  });
+  drawCameos(ctx);
 
   drawBoat(ctx, s, py, frame);
 

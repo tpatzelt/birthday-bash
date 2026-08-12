@@ -110,6 +110,21 @@ export function playEvents(e: Engine, s: BaseState): void {
       case 'bounce':
         blip(e, 220, 160, 0.05, 0.05, 'sine');
         break;
+      case 'knapp':
+        blip(e, 1400, 1800, 0.05, 0.06, 'sine');
+        break;
+      case 'dosendieb':
+        noiseHit(e, 500, 0.1, 0.08, 'bandpass');
+        break;
+      case 'golden':
+        blip(e, 880, 1760, 0.32, 0.22, 'square');
+        break;
+      case 'flunker':
+        blip(e, 340, 1500, 0.28, 0.13, 'sine');
+        break;
+      case 'wildlife':
+        blip(e, 1000, 1200, 0.15, 0.03, 'sine');
+        break;
     }
   });
 }

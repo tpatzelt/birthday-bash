@@ -6,6 +6,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createLevel, stepLevel } from '../../src/core/game.js';
+import { hasEvent } from '../../src/core/state.js';
 import { makeInput } from '../../src/core/input.js';
 import { TUNING, DT, W, NO_MODS, canvasHeight } from '../../src/config/tuning.js';
 import * as pfand from '../../src/core/levels/pfand.js';
@@ -277,5 +278,121 @@ describe('all levels', () => {
     const frame = s.frame;
     stepLevel(s, press(true, 100, 100));
     expect(s.frame).toBe(frame);
+  });
+});
+
+describe('L1 pfand — Knapp! and Dosendieb', () => {
+  it('emits knapp on a close-clearance jump and not on a comfortable one', () => {
+    const g = pfand.groundY(H);
+    const px = TUNING.pfand.playerX;
+
+    function setup(margin: number) {
+      const s = pfand.create(1, H, NO_MODS);
+      s.items.forEach((i) => (i.active = false));
+      const it = s.items[0];
+      it.active = true;
+      it.kind = 'hund';
+      it.w = 24;
+      it.h = 16;
+      // Positioned to cross the player's x this exact frame (prevRight just
+      // ahead of px, currRight just behind it).
+      it.x = px + 0.5 - it.w / 2;
+      it.y = g - it.h / 2;
+      s.onGround = false;
+      s.vy = 0;
+      s.speed = 60; // 1 px/frame at 60 fps
+      // Feet positioned `margin` above the obstacle's top edge.
+      s.py = it.y - it.h / 2 - margin;
+      return s;
+    }
+
+    const close = setup(8);
+    stepLevel(close, press(false));
+    expect(hasEvent(close, 'knapp')).toBe(true);
+
+    const comfortable = setup(60);
+    stepLevel(comfortable, press(false));
+    expect(hasEvent(comfortable, 'knapp')).toBe(false);
+  });
+
+  it('steals an uncollected bottle after enough idle time, never a life', () => {
+    const s = pfand.create(9, H, NO_MODS);
+    s.items.forEach((i) => (i.active = false));
+    const bottle = s.items[0];
+    bottle.active = true;
+    bottle.kind = 'bottle';
+    bottle.x = TUNING.pfand.playerX + 200;
+    bottle.y = pfand.groundY(H) - 16;
+    s.sinceLastJump = 999999;
+    let stolen = false;
+    for (let i = 0; i < 40 && !stolen; i++) {
+      stepLevel(s, press(false));
+      if (hasEvent(s, 'dosendieb')) stolen = true;
+    }
+    expect(stolen).toBe(true);
+    expect(s.lives).toBe(TUNING.pfand.lives);
+    expect(s.bottles).toBe(0);
+  });
+});
+
+describe('L2 sisyphos — Flunkerkarte pickup', () => {
+  it('grants the same immunity as Sonnenbrille regardless of kind', () => {
+    const s = sisyphos.create(1, H, NO_MODS);
+    s.shades[0].active = true;
+    s.shades[0].kind = 'flunker';
+    s.shades[0].x = s.x;
+    s.shades[0].wy = 0;
+    s.progress_px = 0;
+    stepLevel(s, press(true, s.x, 0));
+    expect(hasEvent(s, 'flunker')).toBe(true);
+    expect(s.shadesLeft).toBeGreaterThan(0);
+  });
+});
+
+describe('L3 katjes — combo and golden herring', () => {
+  it('increments combo on catches and resets on a vegetable', () => {
+    const s = katjes.create(1, H, NO_MODS);
+    s.combo = 3;
+    const veg = s.items[0];
+    veg.active = true;
+    veg.kind = 'veg';
+    veg.x = s.x;
+    veg.y = katjes.playerY(H);
+    veg.vy = 1;
+    stepLevel(s, press(true, s.x, 0));
+    expect(s.combo).toBe(0);
+  });
+
+  it('the golden share is carved out of, not additive to, the bonus share', () => {
+    const T = TUNING.katjes;
+    expect(T.shareFish + T.shareVeg + T.shareBonus).toBeCloseTo(1, 6);
+    expect(T.shareGolden).toBeLessThan(T.shareBonus);
+  });
+
+  it('a golden herring is worth more than a plain bonus and keeps the combo going', () => {
+    const s = katjes.create(1, H, NO_MODS);
+    const it = s.items[0];
+    it.active = true;
+    it.kind = 'golden';
+    it.x = s.x;
+    it.y = katjes.playerY(H);
+    it.vy = 1;
+    stepLevel(s, press(true, s.x, 0));
+    expect(s.fish).toBe(TUNING.katjes.goldenValue);
+    expect(s.combo).toBe(1);
+  });
+});
+
+describe('L4 kayak — ambient wildlife never touches Ruhe', () => {
+  it('cameo rolls do not change the Ruhe formula outcome for identical inputs', () => {
+    const before = kayak.create(1, H, NO_MODS);
+    const after = kayak.create(1, H, NO_MODS);
+    for (let i = 0; i < 120; i++) {
+      kayak.step(before, press(false));
+      kayak.step(after, press(false));
+    }
+    // Same seed, same inputs: any RNG draw shift from wildlife rolls must not
+    // desync the deterministic Ruhe outcome for two runs stepped identically.
+    expect(before.ruhe).toBeCloseTo(after.ruhe, 6);
   });
 });

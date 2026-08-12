@@ -18,6 +18,7 @@ import type { Controls } from './controls.js';
 export type DevHooks = {
   getSim: () => AnyLevelState | null;
   startLevel: (level: LevelId, seed?: number) => void;
+  startAfterhour: (seed?: number) => void;
   setFrozen: (v: boolean) => void;
   stepOnce: () => void;
   getControls: () => Controls;
@@ -70,6 +71,7 @@ export function mountDevHarness(hooks: DevHooks): void {
   seedInput.value = '1';
   rowA.append(levelSel, seedInput);
   rowA.append(btn('start', () => hooks.startLevel(levelSel.value as LevelId, Number(seedInput.value) | 0)));
+  rowA.append(btn('afterhour', () => hooks.startAfterhour(Number(seedInput.value) | 0)));
   rowA.append(btn('reveal', () => hooks.goReveal()));
   // The real-device glyph check from PLAN.md M2: what this phone's font can
   // actually draw, and what fell back to a hand-drawn vector.

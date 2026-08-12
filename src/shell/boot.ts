@@ -34,10 +34,12 @@ import {
   type SaveData,
 } from '../core/progress.js';
 import { hashState } from '../core/state.js';
+import { create as createAfterhour, step as stepAfterhour, loopsSurvived, type AfterhourState } from '../core/afterhour.js';
+import { recordAfterhourRun, type AfterhourScore } from '../core/afterhourScore.js';
 
 import { buildAtlas } from '../render/atlas.js';
 import { prefersReducedMotion, resizeCanvas, type Viewport } from '../render/canvas.js';
-import { renderIdle, renderLevel, type RenderContext } from '../render/index.js';
+import { renderIdle, renderLevel, renderAfterhour, type RenderContext } from '../render/index.js';
 import { clearParticles, confetti, makeParticles } from '../render/particles.js';
 
 import { makeEngine, setBrightness, setMuted, start as startAudio, resume, suspend } from '../audio/engine.js';
@@ -47,11 +49,12 @@ import { playDrop, playEvents, playRiser } from '../audio/sfx.js';
 import { attachControls } from './controls.js';
 import { makeOverlay } from './overlay.js';
 import { loadSave, saveSave } from './storage.js';
+import { loadAfterhourScore, saveAfterhourScore } from './afterhourStorage.js';
 
 declare const __DEV_HARNESS__: boolean;
 declare const __BUILD_SHA__: string;
 
-type Phase = 'title' | 'intro' | 'play' | 'fail' | 'win' | 'reveal';
+type Phase = 'title' | 'intro' | 'play' | 'fail' | 'win' | 'reveal' | 'afterhourIntro' | 'afterhour' | 'afterhourFail';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const overlayEl = document.getElementById('overlay') as HTMLElement;
@@ -66,12 +69,14 @@ const overlay = makeOverlay(overlayEl);
 const stepper = makeStepper();
 
 let save: SaveData = loadSave();
+let afterhourScore: AfterhourScore = loadAfterhourScore();
 const engine = makeEngine(save.muted);
 const scheduler = makeScheduler(engine);
 
 let vp: Viewport = resizeCanvas(canvas, ctx);
 let phase: Phase = 'title';
 let sim: AnyLevelState | null = null;
+let simAH: AfterhourState | null = null;
 let renderFrame = 0;
 let whiteout = 0;
 let frozen = false;
@@ -136,6 +141,7 @@ function seedFor(): number {
 function goTitle(): void {
   phase = 'title';
   sim = null;
+  simAH = null;
   tape = null;
   whiteout = 0;
   clearParticles(particles);
@@ -153,6 +159,52 @@ function goTitle(): void {
       goTitle();
     },
     onGift: () => goReveal(false),
+  });
+}
+
+/** A first full clear of all four levels (an actual win, not `?skip=1`) unlocks it. */
+function afterhourUnlocked(): boolean {
+  return totalTimeFrames(save) !== null;
+}
+
+function goAfterhourIntro(): void {
+  phase = 'afterhourIntro';
+  sim = null;
+  simAH = null;
+  overlay.showAfterhourIntro({
+    bestLoops: afterhourScore.bestLoops,
+    bestFrames: afterhourScore.bestFrames,
+    onStart: () => startAfterhour(),
+    onBack: () => goReveal(false),
+  });
+}
+
+function startAfterhour(seed = seedFor(), h?: number): void {
+  phase = 'afterhour';
+  whiteout = 0;
+  tape = null;
+  clearParticles(particles);
+  resetStepper(stepper);
+  simAH = createAfterhour(seed, h ?? canvasHeight(vp.cssW, vp.cssH));
+  overlay.hide();
+  setScene(scheduler, simAH.segment.level);
+}
+
+function goAfterhourFail(): void {
+  if (!simAH) return;
+  phase = 'afterhourFail';
+  const loops = loopsSurvived(simAH);
+  const frames = simAH.frame;
+  const { isNewBest } = recordAfterhourRun(afterhourScore, loops, frames);
+  saveAfterhourScore(afterhourScore);
+  simAH = null;
+  overlay.showAfterhourFail({
+    loops,
+    frames,
+    isNewBest,
+    bestLoops: afterhourScore.bestLoops,
+    onRetry: () => startAfterhour(),
+    onTitle: () => goTitle(),
   });
 }
 
@@ -218,6 +270,7 @@ function goWin(level: LevelId, frames: number): void {
 function goReveal(fresh: boolean): void {
   phase = 'reveal';
   sim = null;
+  simAH = null;
   save = markRevealed(save);
   const isNewBest = updateBestTotal(save);
   persist();
@@ -229,6 +282,7 @@ function goReveal(fresh: boolean): void {
     totalFrames: totalTimeFrames(save),
     bestFrames: save.bestTotalFrames,
     isNewBest,
+    afterhourUnlocked: afterhourUnlocked(),
     onDrop: () => {
       playDrop(engine);
       confetti(particles, W, canvasHeight(vp.cssW, vp.cssH), reducedMotion ? 30 : 140);
@@ -236,6 +290,9 @@ function goReveal(fresh: boolean): void {
     onPlayAgain: () => goTitle(),
     onSelectLevel: (level) => {
       if (isUnlocked(save, level)) goIntro(level);
+    },
+    onSelectAfterhour: () => {
+      if (afterhourUnlocked()) goAfterhourIntro();
     },
   });
 }
@@ -289,6 +346,20 @@ function fixedStep(): void {
   }
 }
 
+function fixedStepAfterhour(): void {
+  if (!simAH || phase !== 'afterhour') return;
+
+  const input = controls.frame;
+  const prevLevel = simAH.segment.level;
+  stepAfterhour(simAH, input);
+  controls.consume();
+  playEvents(engine, simAH.segment);
+  if (simAH.segment.level === 'kayak') setBrightness(engine, simAH.segment.ruhe / 100);
+  if (simAH.segment.level !== prevLevel) setScene(scheduler, simAH.segment.level);
+
+  if (simAH.status === 'fail') goAfterhourFail();
+}
+
 let last = 0;
 
 function frame(now: number): void {
@@ -298,7 +369,10 @@ function frame(now: number): void {
   const elapsed = last === 0 ? DT : (now - last) / 1000;
   last = now;
 
-  if (!controls.paused) advance(stepper, elapsed * timeScale, fixedStep);
+  if (!controls.paused) {
+    if (phase === 'afterhour') advance(stepper, elapsed * timeScale, fixedStepAfterhour);
+    else advance(stepper, elapsed * timeScale, fixedStep);
+  }
   draw();
 }
 
@@ -306,7 +380,8 @@ function draw(): void {
   renderFrame++;
   rc.beatPhase = beatPhase(scheduler);
   rc.whiteout = whiteout;
-  if (sim) renderLevel(rc, sim, renderFrame);
+  if (simAH) renderAfterhour(rc, simAH, renderFrame);
+  else if (sim) renderLevel(rc, sim, renderFrame);
   else renderIdle(rc, canvasHeight(vp.cssW, vp.cssH), renderFrame);
 }
 
@@ -361,17 +436,25 @@ const bb = {
     draw();
   },
   getState(): unknown {
+    if (simAH) return { phase, hash: hashState(simAH.segment), state: simAH };
     return sim ? { phase, hash: hashState(sim), state: sim } : { phase, hash: null, state: null };
   },
   goto(level: LevelId, seed?: number): void {
     if (typeof seed === 'number') forcedSeed = seed | 0;
     startLevel(level, seed ?? seedFor());
   },
+  gotoAfterhour(seed?: number): void {
+    if (typeof seed === 'number') forcedSeed = seed | 0;
+    startAfterhour(seed ?? seedFor());
+  },
   reveal(): void {
     goReveal(true);
   },
   save(): SaveData {
     return save;
+  },
+  afterhourSave(): AfterhourScore {
+    return afterhourScore;
   },
 };
 
@@ -396,6 +479,7 @@ if (__DEV_HARNESS__) {
     m.mountDevHarness({
       getSim: () => sim,
       startLevel: (level, seed) => startLevel(level, seed),
+      startAfterhour: (seed) => startAfterhour(seed),
       setFrozen: (v) => {
         frozen = v;
         if (!v) {
@@ -404,7 +488,8 @@ if (__DEV_HARNESS__) {
         }
       },
       stepOnce: () => {
-        fixedStep();
+        if (phase === 'afterhour') fixedStepAfterhour();
+        else fixedStep();
         draw();
       },
       getControls: () => controls,

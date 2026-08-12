@@ -4,12 +4,10 @@
 
 ## 1. Premise
 
-Jonas comes from Kiel and has lived in Neukölln for eight years now — this
-isn't a test of whether he belongs, he clearly already does. The game is a
-birthday bash built from four trials pulled from things he actually likes. He
-passes all four, the game congratulates him — and then tells him the real
-present is not on Berlin's streets but in a warehouse in Berlin with a headset
-on his face: **Sandbox VR**.
+Jonas turns 34. The game is a birthday bash built from four trials pulled from
+things he actually likes. He passes all four, the game congratulates him — and
+then tells him the real present is not on Berlin's streets but in a warehouse
+in Berlin with a headset on his face: **Sandbox VR**.
 
 Every level is drawn from something he actually likes, so the game reads as "we
 know you" rather than "we made a game". That is the entire emotional payload;
@@ -288,9 +286,8 @@ He must reach the reveal. Non-negotiable, encoded as rules:
 German, du-form, dry, Berlin-blunt. Never quirky-cute, never exclamation marks
 in threes. Sample voice:
 
-- Title: **JONAS BIRTHDAY BASH** / *8 Jahre Berlin* / „Vier Level. Ein Endgegner."
+- Title: **JONAS BIRTHDAY BASH** / *34 Jahre alt* / „Vier Level. Ein Endgegner."
 - L2 fail: „Heute nicht."
 - L3 fail: „Du hast Gemüse gegessen. In Neukölln."
 - L4 fail: „Zu hektisch. Atme."
 - Skip button: „Überspringen (wir verraten's keinem)"
-- Kiel callback on the title screen: „Level 0: Kiel verlassen ✓"

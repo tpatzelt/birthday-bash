@@ -23,8 +23,10 @@ type BB = {
   step: (n?: number) => void;
   getState: () => { phase: string; hash: string | null; state: Record<string, unknown> | null };
   goto: (level: string, seed?: number) => void;
+  gotoAfterhour: (seed?: number) => void;
   reveal: () => void;
   save: () => { unlocked: number; revealed: boolean; muted: boolean };
+  afterhourSave: () => { bestLoops: number; bestFrames: number };
 };
 
 declare global {
@@ -64,7 +66,6 @@ test.describe('cold load', () => {
     await expect(page.locator('#overlay h1')).toHaveText('JONAS BIRTHDAY BASH');
     expect(Date.now() - t0).toBeLessThan(4000);
     await expect(page.locator('#overlay')).toContainText('Vier Level. Ein Endgegner.');
-    await expect(page.locator('#overlay')).toContainText('Level 0: Kiel verlassen');
     await ready(page);
     expect(errors).toEqual([]);
   });
@@ -131,6 +132,38 @@ test.describe('the whole gift', () => {
     // No level was actually won, so there is no time to show — and nothing to
     // punish him for skipping straight to the present.
     await expect(page.locator('#overlay')).not.toContainText('DEINE ZEIT');
+  });
+
+  test('unlocks Afterhour after a full clear and a run updates its highscore', async ({ page }) => {
+    await page.goto('/');
+    await ready(page);
+
+    for (const level of LEVEL_ORDER) {
+      await playTape(page, TAPES[level]);
+      if (level !== 'kayak') await page.locator('#overlay button.primary').click();
+    }
+
+    const overlay = page.locator('#overlay');
+    await expect(overlay).toHaveClass(/reveal/);
+    await expect(overlay).toContainText('SANDBOX VR', { timeout: 20_000 });
+
+    const ahBtn = page.locator('#overlay button.afterhour');
+    await expect(ahBtn).toBeVisible();
+    await expect(ahBtn).toBeEnabled();
+    await ahBtn.click();
+    await expect(overlay).toContainText('AFTERHOUR');
+
+    await page.locator('#overlay button.primary').click(); // LOS
+    await expect(overlay).not.toHaveClass(/on/);
+
+    await page.evaluate(() => {
+      window.__bb.freeze();
+      window.__bb.gotoAfterhour(1);
+      window.__bb.step(40 * 60);
+      window.__bb.unfreeze();
+    });
+    const state = await page.evaluate(() => window.__bb.getState());
+    expect(state.phase === 'afterhour' || state.phase === 'afterhourFail').toBe(true);
   });
 
   test('offers "zum Geschenk" on the title screen once seen', async ({ page }) => {

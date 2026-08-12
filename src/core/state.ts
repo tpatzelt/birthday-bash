@@ -26,7 +26,15 @@ export type EventType =
   | 'calm'
   | 'whale'
   | 'win'
-  | 'fail';
+  | 'fail'
+  | 'knapp'
+  | 'dosendieb'
+  | 'golden'
+  | 'flunker'
+  | 'wildlife'
+  | 'segmentStart'
+  | 'loopComplete'
+  | 'afterhourFail';
 
 /** Emitted into an array on the state, never dispatched. Audio and particles read them. */
 export type GameEvent = { type: EventType; x: number; y: number; a: number };

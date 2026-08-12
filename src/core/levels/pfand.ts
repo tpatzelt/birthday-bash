@@ -45,6 +45,8 @@ export type PfandState = BaseState & {
   cents: number;
   goal: number;
   items: PfandItem[];
+  /** Frames since the last successful jump — drives the Dosendieb anti-stall roll. */
+  sinceLastJump: number;
 };
 
 const POOL = 48;
@@ -78,6 +80,7 @@ export function create(seed: number, h: number, mods: Mods): PfandState {
     cents: 0,
     goal: T.goalBottles,
     items,
+    sinceLastJump: 0,
   };
   s.nextGap = rollGap(s);
   return s;
@@ -149,10 +152,12 @@ export function step(s: PfandState, input: InputFrame): PfandState {
     s.onGround = false;
     s.buffer = 0;
     s.coyote = 0;
+    s.sinceLastJump = 0;
     emit(s, 'jump', T.playerX + T.hitW / 2, s.py);
   }
   if (s.buffer > 0) s.buffer--;
   if (s.coyote > 0) s.coyote--;
+  s.sinceLastJump++;
 
   // --- integrate ------------------------------------------------------------
   s.vy += T.gravity * DT;
@@ -178,12 +183,28 @@ export function step(s: PfandState, input: InputFrame): PfandState {
     spawnWave(s);
   }
 
+  // --- Dosendieb: anti-stall, never costs a life or the fail condition ------
+  if (s.sinceLastJump >= msToFrames(T.dosendiebIdleS * 1000)) {
+    let nearest: PfandItem | null = null;
+    for (let i = 0; i < s.items.length; i++) {
+      const it = s.items[i];
+      if (!it.active || it.kind !== 'bottle' || it.x <= T.playerX) continue;
+      if (!nearest || it.x < nearest.x) nearest = it;
+    }
+    if (nearest && randBool(s.rng, T.dosendiebChance)) {
+      nearest.active = false;
+      emit(s, 'dosendieb', nearest.x, nearest.y);
+      s.sinceLastJump = 0;
+    }
+  }
+
   // --- move + collide -------------------------------------------------------
   const px = T.playerX;
   const pyTop = s.py - T.hitH;
   for (let i = 0; i < s.items.length; i++) {
     const it = s.items[i];
     if (!it.active) continue;
+    const prevRight = it.x + it.w / 2;
     it.x -= s.speed * DT;
     if (it.x < -ITEM_MARGIN) {
       it.active = false;
@@ -203,6 +224,12 @@ export function step(s: PfandState, input: InputFrame): PfandState {
         s.shake = 8;
         it.active = false;
       }
+    } else if (!s.onGround && prevRight >= px && it.x + it.w / 2 < px) {
+      // Just cleared this obstacle in the air: a small margin between the feet
+      // and the obstacle's top pops "Knapp!" (not the hitbox top — that's
+      // always ~hitH higher and would never read as "close").
+      const margin = it.y - it.h / 2 - s.py;
+      if (margin > 0 && margin <= T.knappMarginPx) emit(s, 'knapp', it.x, it.y);
     }
   }
 

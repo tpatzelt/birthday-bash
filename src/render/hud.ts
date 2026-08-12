@@ -42,7 +42,16 @@ export function tracked(
   ctx.textAlign = prev;
 }
 
-function livesRow(ctx: CanvasRenderingContext2D, x: number, y: number, lives: number, max: number): void {
+/**
+ * Solo play never exceeds a handful of lives (3 base + the mercy rule's +1).
+ * Afterhour inflates a segment's own livesMax far past that on purpose (the
+ * shared strike pool is the real limit, drawn separately) — past this many,
+ * a per-pip row would just be clutter, so it's skipped rather than drawn tiny.
+ */
+const LIVES_ROW_MAX = 6;
+
+export function livesRow(ctx: CanvasRenderingContext2D, x: number, y: number, lives: number, max: number): void {
+  if (max > LIVES_ROW_MAX) return;
   for (let i = 0; i < max; i++) {
     const on = i < lives;
     ctx.fillStyle = on ? PINK : 'rgba(185,180,214,0.25)';
@@ -96,6 +105,11 @@ export function drawHud(ctx: CanvasRenderingContext2D, s: AnyLevelState, vp: Vie
       ctx.fillStyle = 'rgba(185,180,214,0.55)';
       ctx.fillText(`/ ${s.goal}`, 20 + countW + 10, top + 36);
       livesRow(ctx, W - 20 - (s.livesMax - 1) * 13 - 8, top + 4, s.lives, s.livesMax);
+      if (s.combo >= TUNING.katjes.comboShowAt) {
+        ctx.fillStyle = AMBER;
+        display(ctx, 10);
+        tracked(ctx, `KOMBO ×${s.combo}`, 20, top + 50, 1.6);
+      }
       break;
     }
     case 'kayak':

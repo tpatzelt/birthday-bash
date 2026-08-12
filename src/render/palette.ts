@@ -16,3 +16,6 @@ export const VEG_PURPLE = '#9B5DE5';
 /** The Tüte reads as the actual Katjes bag, so it borrows their brand blue. */
 export const KATJES_BLUE = '#1361C9';
 export const KATJES_BLUE_LIGHT = '#3E85E8';
+
+/** One-off accent, same exception as the vegetables: the golden herring must shout. */
+export const GOLD = '#FFD700';

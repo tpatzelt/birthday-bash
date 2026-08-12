@@ -13,7 +13,7 @@ import { rand, randInt, randRange } from '../rng.js';
 
 const T = TUNING.katjes;
 
-export type KatjesKind = 'fish' | 'veg' | 'bonus';
+export type KatjesKind = 'fish' | 'veg' | 'bonus' | 'golden';
 
 export type Falling = {
   active: boolean;
@@ -37,6 +37,8 @@ export type KatjesState = BaseState & {
   /** Seconds until the next spawn. */
   spawnIn: number;
   items: Falling[];
+  /** Consecutive catches since the last vegetable, for the "Kombo" HUD flourish. */
+  combo: number;
 };
 
 const POOL = 40;
@@ -60,6 +62,7 @@ export function create(seed: number, h: number, mods: Mods): KatjesState {
     goal: T.goalFish,
     spawnIn: 0.4,
     items,
+    combo: 0,
   };
 }
 
@@ -73,7 +76,16 @@ function spawn(s: KatjesState): void {
     const it = s.items[i];
     if (it.active) continue;
     const r = rand(s.rng);
-    it.kind = r < T.shareFish ? 'fish' : r < T.shareFish + T.shareVeg ? 'veg' : 'bonus';
+    // shareGolden is carved OUT of shareBonus, not additive: shareFish + shareVeg
+    // + shareBonus must keep summing to 1 exactly as before.
+    it.kind =
+      r < T.shareFish
+        ? 'fish'
+        : r < T.shareFish + T.shareVeg
+          ? 'veg'
+          : r < T.shareFish + T.shareVeg + T.shareGolden
+            ? 'golden'
+            : 'bonus';
     it.active = true;
     it.x = randRange(s.rng, 26, W - 26);
     it.y = -20;
@@ -125,12 +137,19 @@ export function step(s: KatjesState, input: InputFrame): KatjesState {
       it.active = false;
       if (it.kind === 'fish') {
         s.fish++;
+        s.combo++;
         emit(s, 'fish', it.x, it.y, s.fish);
       } else if (it.kind === 'bonus') {
         s.fish += T.bonusValue;
+        s.combo++;
         emit(s, 'bonus', it.x, it.y, s.fish);
+      } else if (it.kind === 'golden') {
+        s.fish += T.goldenValue;
+        s.combo++;
+        emit(s, 'golden', it.x, it.y, s.fish);
       } else {
         // Du hast Gemüse gegessen. In Neukölln.
+        s.combo = 0;
         emit(s, 'veg', it.x, it.y, 0);
         takeHit(s, 30, it.x, it.y);
         s.shake = 8;

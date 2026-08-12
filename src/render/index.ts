@@ -8,6 +8,7 @@
 
 import { TUNING, W } from '../config/tuning.js';
 import type { AnyLevelState } from '../core/game.js';
+import type { AfterhourState } from '../core/afterhour.js';
 import type { Viewport } from './canvas.js';
 import { drawHud } from './hud.js';
 import { INK } from './palette.js';
@@ -16,6 +17,7 @@ import { drawKatjes } from './scene/katjes.js';
 import { drawKayak } from './scene/kayak.js';
 import { drawPfand } from './scene/pfand.js';
 import { drawSisyphos } from './scene/sisyphos.js';
+import { drawAfterhourMeta } from './scene/afterhour.js';
 
 export type RenderContext = {
   ctx: CanvasRenderingContext2D;
@@ -82,6 +84,13 @@ export function renderLevel(rc: RenderContext, s: AnyLevelState, frame: number):
     ctx.fillRect(0, 0, W, s.h);
     ctx.globalAlpha = 1;
   }
+}
+
+/** Afterhour: the segment's own renderLevel(), plus a meta-strip on top. */
+export function renderAfterhour(rc: RenderContext, ah: AfterhourState, frame: number): void {
+  renderLevel(rc, ah.segment, frame);
+  const top = 16 + rc.vp.safeTop;
+  drawAfterhourMeta(rc.ctx, ah, top, frame);
 }
 
 /** The title/menu backdrop: the same city, without a level running. */

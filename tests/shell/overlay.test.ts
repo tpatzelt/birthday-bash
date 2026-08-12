@@ -34,7 +34,7 @@ describe('gift config', () => {
 });
 
 describe('overlay', () => {
-  it('shows the title card with the Kiel callback', () => {
+  it('shows the title card', () => {
     const { root, overlay } = mount();
     overlay.showTitle({
       revealed: false,
@@ -46,7 +46,6 @@ describe('overlay', () => {
       onGift: () => undefined,
     });
     expect(root.textContent).toContain('JONAS BIRTHDAY BASH');
-    expect(root.textContent).toContain('Level 0: Kiel verlassen');
     // No gift button before the reveal has ever been seen.
     expect(root.textContent).not.toContain('ZUM GESCHENK');
   });
@@ -97,6 +96,8 @@ describe('overlay', () => {
       onDrop: drop,
       onPlayAgain: () => undefined,
       onSelectLevel: () => undefined,
+      afterhourUnlocked: false,
+      onSelectAfterhour: () => undefined,
     });
     await vi.advanceTimersByTimeAsync(6000);
     vi.useRealTimers();
@@ -133,6 +134,8 @@ describe('overlay', () => {
       onDrop: () => undefined,
       onPlayAgain: () => undefined,
       onSelectLevel: () => undefined,
+      afterhourUnlocked: false,
+      onSelectAfterhour: () => undefined,
     });
     await vi.advanceTimersByTimeAsync(6000);
     vi.useRealTimers();
@@ -151,10 +154,71 @@ describe('overlay', () => {
       onDrop: () => undefined,
       onPlayAgain: () => undefined,
       onSelectLevel: () => undefined,
+      afterhourUnlocked: false,
+      onSelectAfterhour: () => undefined,
     });
     await vi.advanceTimersByTimeAsync(6000);
     vi.useRealTimers();
     expect(root.textContent).not.toContain('DEINE ZEIT');
+  });
+
+  it('shows the Afterhour tile, disabled until unlocked', async () => {
+    vi.useFakeTimers();
+    const { root, overlay } = mount();
+    overlay.showReveal({
+      unlocked: 5,
+      reducedMotion: true,
+      totalFrames: null,
+      bestFrames: null,
+      isNewBest: false,
+      onDrop: () => undefined,
+      onPlayAgain: () => undefined,
+      onSelectLevel: () => undefined,
+      afterhourUnlocked: false,
+      onSelectAfterhour: () => undefined,
+    });
+    await vi.advanceTimersByTimeAsync(6000);
+    vi.useRealTimers();
+    const btn = root.querySelector('button.afterhour') as HTMLButtonElement | null;
+    expect(btn).not.toBeNull();
+    expect(btn?.disabled).toBe(true);
+  });
+
+  it('enables the Afterhour tile once unlocked', async () => {
+    vi.useFakeTimers();
+    const { root, overlay } = mount();
+    overlay.showReveal({
+      unlocked: 5,
+      reducedMotion: true,
+      totalFrames: 60 * 111,
+      bestFrames: null,
+      isNewBest: true,
+      onDrop: () => undefined,
+      onPlayAgain: () => undefined,
+      onSelectLevel: () => undefined,
+      afterhourUnlocked: true,
+      onSelectAfterhour: () => undefined,
+    });
+    await vi.advanceTimersByTimeAsync(6000);
+    vi.useRealTimers();
+    const btn = root.querySelector('button.afterhour') as HTMLButtonElement | null;
+    expect(btn?.disabled).toBe(false);
+  });
+
+  it('shows the Afterhour intro and fail cards', () => {
+    const { root, overlay } = mount();
+    overlay.showAfterhourIntro({ bestLoops: 2, bestFrames: 600, onStart: () => undefined, onBack: () => undefined });
+    expect(root.textContent).toContain('AFTERHOUR');
+
+    overlay.showAfterhourFail({
+      loops: 3,
+      frames: 900,
+      isNewBest: true,
+      bestLoops: 3,
+      onRetry: () => undefined,
+      onTitle: () => undefined,
+    });
+    expect(root.textContent).toContain('NEUE BESTE RUNDE');
   });
 
   it('hides cleanly', () => {

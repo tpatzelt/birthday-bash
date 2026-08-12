@@ -11,6 +11,7 @@ import { playerY, type KatjesState, type Falling } from '../../core/levels/katje
 import { drawGlyph } from '../atlas.js';
 import {
   CHALK,
+  GOLD,
   KATJES_BLUE,
   KATJES_BLUE_LIGHT,
   PINK,
@@ -58,7 +59,10 @@ function drawItem(ctx: CanvasRenderingContext2D, it: Falling, frame: number): vo
       drawHering(ctx, it.x, it.y, spin * 0.25);
       break;
     case 'bonus':
-      drawLakritz(ctx, it.x, it.y, spin * 0.4, frame);
+      drawLakritz(ctx, it.x, it.y, spin * 0.4, frame, PINK);
+      break;
+    case 'golden':
+      drawLakritz(ctx, it.x, it.y, spin * 0.4, frame, GOLD);
       break;
     case 'veg':
       drawVeg(ctx, it, spin);
@@ -113,12 +117,19 @@ function drawHering(ctx: CanvasRenderingContext2D, x: number, y: number, rot: nu
   ctx.restore();
 }
 
-function drawLakritz(ctx: CanvasRenderingContext2D, x: number, y: number, rot: number, frame: number): void {
+function drawLakritz(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  rot: number,
+  frame: number,
+  accent: string,
+): void {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(rot);
   ctx.globalAlpha = 0.35 + 0.25 * Math.sin(frame * 0.2);
-  ctx.fillStyle = PINK;
+  ctx.fillStyle = accent;
   ctx.beginPath();
   ctx.arc(0, 0, 18, 0, Math.PI * 2);
   ctx.fill();
@@ -128,7 +139,7 @@ function drawLakritz(ctx: CanvasRenderingContext2D, x: number, y: number, rot: n
   ctx.beginPath();
   ctx.arc(0, 0, 12, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = PINK;
+  ctx.strokeStyle = accent;
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   ctx.arc(0, 0, 6.5, 0, Math.PI * 2);
@@ -165,6 +176,13 @@ function drawBag(ctx: CanvasRenderingContext2D, s: KatjesState, py: number, fram
   ctx.save();
   ctx.translate(s.x, py);
   ctx.rotate(tilt);
+  // Squash/stretch on a veg hit, derived from the existing invuln timer —
+  // no new core state needed.
+  if (s.invuln > 0) {
+    const wt = s.invuln / 30;
+    const scaleX = 1 + T.veghitWobble * Math.sin(wt * Math.PI);
+    ctx.scale(scaleX, 1 / scaleX);
+  }
 
   const grad = ctx.createLinearGradient(0, 0, 0, 58);
   grad.addColorStop(0, KATJES_BLUE_LIGHT);

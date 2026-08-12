@@ -7,11 +7,46 @@
 
 import { TUNING, W } from '../../config/tuning.js';
 import { groundY, type PfandState } from '../../core/levels/pfand.js';
+import { forEachEvent } from '../../core/state.js';
 import { drawGlyph } from '../atlas.js';
 import { AMBER, CHALK, HAZE, INK, PINK } from '../palette.js';
+import { display } from '../hud.js';
 import { skyline, verticalGradient, vignette } from './shared.js';
 
 const T = TUNING.pfand;
+
+// --- renderer-local popup pools --------------------------------------------
+// Not simulation state: purely cosmetic, fed by this frame's events, never
+// allocated per frame.
+
+type Popup = { active: boolean; x: number; y: number; life: number; text: string };
+const POPUP_POOL = 4;
+const popups: Popup[] = Array.from({ length: POPUP_POOL }, () => ({ active: false, x: 0, y: 0, life: 0, text: '' }));
+let popupNext = 0;
+
+function spawnPopup(x: number, y: number, text: string): void {
+  const p = popups[popupNext];
+  popupNext = (popupNext + 1) % POPUP_POOL;
+  p.active = true;
+  p.x = x;
+  p.y = y;
+  p.life = 30; // 0.5 s at 60 fps
+  p.text = text;
+}
+
+type Thief = { active: boolean; x: number; y: number; life: number };
+const THIEF_POOL = 2;
+const thieves: Thief[] = Array.from({ length: THIEF_POOL }, () => ({ active: false, x: 0, y: 0, life: 0 }));
+let thiefNext = 0;
+
+function spawnThief(x: number, y: number): void {
+  const t = thieves[thiefNext];
+  thiefNext = (thiefNext + 1) % THIEF_POOL;
+  t.active = true;
+  t.x = x;
+  t.y = y;
+  t.life = 22;
+}
 
 export function drawPfand(ctx: CanvasRenderingContext2D, s: PfandState, frame: number): void {
   const h = s.h;
@@ -41,7 +76,9 @@ export function drawPfand(ctx: CanvasRenderingContext2D, s: PfandState, frame: n
   ctx.fill();
 
   skyline(ctx, s.dist * 0.06, g - 150, '#0C0A1F', 92, 90, Math.max(140, g * 0.36), 3);
+  drawSBahn(ctx, s.dist, g);
   skyline(ctx, s.dist * 0.12, g - 96, '#0E0C22', 74, 70, Math.max(120, g * 0.26), 1);
+  drawSpaeti(ctx, s.dist, g);
   skyline(ctx, s.dist * 0.28, g - 34, '#141130', 58, 40, 120, 7);
 
   // --- street --------------------------------------------------------------
@@ -104,7 +141,85 @@ export function drawPfand(ctx: CanvasRenderingContext2D, s: PfandState, frame: n
   }
 
   drawRunner(ctx, s, g, frame);
+
+  // --- juice: Knapp! text pop, Dosendieb sprite -----------------------------
+  forEachEvent(s, (e) => {
+    if (e.type === 'knapp') spawnPopup(e.x, e.y - 20, 'KNAPP!');
+    if (e.type === 'dosendieb') spawnThief(e.x, e.y);
+  });
+  drawPopups(ctx);
+  drawThieves(ctx);
+
   vignette(ctx, h, 0.42);
+}
+
+/** A distant S-Bahn silhouette, lit windows drifting past behind the skyline. */
+function drawSBahn(ctx: CanvasRenderingContext2D, dist: number, g: number): void {
+  const y = g - 172;
+  const x = (W + 260 - ((dist * 0.02) % (W + 260))) - 260;
+  ctx.fillStyle = '#0A0820';
+  ctx.fillRect(x, y, 150, 22);
+  ctx.fillStyle = 'rgba(255,179,0,0.35)';
+  for (let i = 0; i < 6; i++) ctx.fillRect(x + 8 + i * 24, y + 6, 12, 8);
+}
+
+/** SPÄTI ✧ 24H — hand-drawn, not a new atlas glyph, this close to the freeze. */
+function drawSpaeti(ctx: CanvasRenderingContext2D, dist: number, g: number): void {
+  const span = 900;
+  const off = dist % span;
+  const x = W - off + 40;
+  if (x < -80 || x > W + 80) return;
+  const y = g - 108;
+  ctx.fillStyle = '#141033';
+  ctx.fillRect(x, y, 62, 30);
+  ctx.fillStyle = AMBER;
+  display(ctx, 8, 800);
+  ctx.textAlign = 'left';
+  ctx.fillText('SPÄTI', x + 6, y + 14);
+  ctx.fillStyle = 'rgba(255,179,0,0.6)';
+  ctx.fillText('24H', x + 6, y + 25);
+}
+
+function drawPopups(ctx: CanvasRenderingContext2D): void {
+  for (const p of popups) {
+    if (!p.active) continue;
+    p.life--;
+    if (p.life <= 0) {
+      p.active = false;
+      continue;
+    }
+    const t = p.life / 30;
+    ctx.globalAlpha = Math.min(1, t * 2);
+    ctx.fillStyle = AMBER;
+    display(ctx, 13, 800);
+    ctx.textAlign = 'center';
+    ctx.fillText(p.text, p.x, p.y - (1 - t) * 22);
+    ctx.textAlign = 'left';
+    ctx.globalAlpha = 1;
+  }
+}
+
+/** Dosendieb: a quick hand-drawn silhouette darting in for the stolen bottle. */
+function drawThieves(ctx: CanvasRenderingContext2D): void {
+  for (const th of thieves) {
+    if (!th.active) continue;
+    th.life--;
+    if (th.life <= 0) {
+      th.active = false;
+      continue;
+    }
+    const t = th.life / 22;
+    ctx.globalAlpha = t;
+    ctx.fillStyle = INK;
+    ctx.strokeStyle = HAZE;
+    ctx.lineWidth = 2;
+    const dx = (1 - t) * 26;
+    ctx.beginPath();
+    ctx.ellipse(th.x - dx, th.y, 10, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
 }
 
 /** Baustellenzaun: hand-drawn, because a fence has to read as "jump this". */

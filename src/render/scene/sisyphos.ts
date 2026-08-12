@@ -39,7 +39,7 @@ export function drawSisyphos(
   const gateY = screenY(s.goal, s.progress_px, h);
   if (gateY > -160) drawGate(ctx, gateY, s.status === 'win', frame);
 
-  // --- Sonnenbrille --------------------------------------------------------
+  // --- Sonnenbrille / Flunkerkarte ------------------------------------------
   for (let i = 0; i < s.shades.length; i++) {
     const p = s.shades[i];
     if (!p.active) continue;
@@ -51,7 +51,8 @@ export function drawSisyphos(
     ctx.arc(p.x, sy, 20 + Math.sin(frame * 0.14) * 3, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
-    drawGlyph(ctx, 'shades', p.x, sy, 30);
+    if (p.kind === 'flunker') drawFlunkerkarte(ctx, p.x, sy);
+    else drawGlyph(ctx, 'shades', p.x, sy, 30);
   }
 
   // --- Türsteher -----------------------------------------------------------
@@ -60,7 +61,7 @@ export function drawSisyphos(
     if (!b.active) continue;
     const sy = screenY(b.wy, s.progress_px, h);
     if (sy < -60 || sy > h + 60) continue;
-    drawBouncer(ctx, b.x, sy, b.vx, s.shadesLeft > 0);
+    drawBouncer(ctx, b.x, sy, b.vx, s.shadesLeft > 0, b.glanceLeft > 0);
   }
 
   drawQueuer(ctx, s, py, frame);
@@ -124,7 +125,14 @@ function tree(ctx: CanvasRenderingContext2D, x: number, y: number, r: number): v
  * the reference silhouette (bald, shades, folded arms at the Berghain door),
  * kept abstract enough to still read as a flat flyer silhouette at 44 px.
  */
-function drawBouncer(ctx: CanvasRenderingContext2D, x: number, y: number, vx: number, ignored: boolean): void {
+function drawBouncer(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  vx: number,
+  ignored: boolean,
+  glancing: boolean,
+): void {
   ctx.globalAlpha = ignored ? 0.32 : 1;
   const body = ignored ? '#3A3560' : '#1B1740';
   const shade = ignored ? '#4A4472' : '#241F52';
@@ -162,16 +170,41 @@ function drawBouncer(ctx: CanvasRenderingContext2D, x: number, y: number, vx: nu
   ctx.beginPath();
   ctx.roundRect(x - 10, y - 10, 20, 6, 3);
   ctx.fill();
-  // A single cold highlight on the lens facing the direction he's walking.
+  // A single cold highlight on the lens facing the direction he's walking —
+  // or, on a fast bouncer about to move, a wider two-lens glance telegraph.
   ctx.fillStyle = ignored ? 'rgba(35,211,196,0.25)' : 'rgba(35,211,196,0.55)';
-  ctx.beginPath();
-  ctx.ellipse(x + (vx > 0 ? 3.5 : -3.5), y - 7.5, 3, 1.4, 0, 0, Math.PI * 2);
-  ctx.fill();
+  if (glancing) {
+    ctx.beginPath();
+    ctx.ellipse(x - 3.5, y - 7.5, 3, 1.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + 3.5, y - 7.5, 3, 1.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.ellipse(x + (vx > 0 ? 3.5 : -3.5), y - 7.5, 3, 1.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   // Badge/torch clip at the belt.
   ctx.fillStyle = 'rgba(255,45,111,0.5)';
   ctx.fillRect(x - 2, y + 14, 4, 4);
   ctx.globalAlpha = 1;
+}
+
+/** Flunkerkarte: a hand-drawn ID card, not a new atlas glyph this close to the freeze. */
+function drawFlunkerkarte(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(-0.12);
+  ctx.fillStyle = CHALK;
+  ctx.fillRect(-16, -11, 32, 22);
+  ctx.fillStyle = TEAL;
+  ctx.fillRect(-16, -11, 32, 5);
+  ctx.fillStyle = '#0A0819';
+  ctx.fillRect(-11, -1, 9, 9);
+  ctx.fillStyle = HAZE;
+  ctx.fillRect(1, 0, 12, 2);
+  ctx.fillRect(1, 4, 8, 2);
+  ctx.restore();
 }
 
 function drawQueuer(ctx: CanvasRenderingContext2D, s: SisyphosState, py: number, frame: number): void {

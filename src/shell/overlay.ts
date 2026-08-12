@@ -8,6 +8,7 @@
 
 import { BUILD_LINES, DETAIL_ROWS, gift } from '../config/gift.js';
 import { LEVEL_ORDER, type LevelId } from '../core/input.js';
+import { buildShareText, copyShareText } from './share.js';
 
 export const LEVEL_TITLE: Record<LevelId, string> = {
   pfand: 'PFANDPIRAT NEUKÖLLN',
@@ -51,6 +52,12 @@ export const LEVEL_SHORT: Record<LevelId, string> = {
   kayak: '4 · KAYAK',
 };
 
+const AFTERHOUR_TITLE = 'AFTERHOUR';
+const AFTERHOUR_SUB = 'Kein Ende. Kein Türsteher, der dich noch aufhält.';
+const AFTERHOUR_LOCKED_HINT = 'Erst alle vier schaffen.';
+const AFTERHOUR_HOWTO = 'Pfand, Sisyphos, Katjes, Kayak — auf Wiederholung, schneller bei jeder Runde.';
+const AFTERHOUR_FAIL = 'Vorbei. Die Nacht ist trotzdem gelaufen.';
+
 type El = HTMLElement;
 
 function h(tag: string, className?: string, text?: string): El {
@@ -80,6 +87,8 @@ export type Overlay = {
   showFail(o: FailOptions): void;
   showWin(level: LevelId, onNext: () => void): void;
   showReveal(o: RevealOptions): void;
+  showAfterhourIntro(o: AfterhourIntroOptions): void;
+  showAfterhourFail(o: AfterhourFailOptions): void;
   visible(): boolean;
 };
 
@@ -113,6 +122,25 @@ export type RevealOptions = {
   bestFrames: number | null;
   /** Whether this run's total just became the new best. */
   isNewBest: boolean;
+  /** A first full clear (a real win on all four, not `?skip=1`) unlocks the 5th tile. */
+  afterhourUnlocked: boolean;
+  onSelectAfterhour: () => void;
+};
+
+export type AfterhourIntroOptions = {
+  bestLoops: number;
+  bestFrames: number;
+  onStart: () => void;
+  onBack: () => void;
+};
+
+export type AfterhourFailOptions = {
+  loops: number;
+  frames: number;
+  isNewBest: boolean;
+  bestLoops: number;
+  onRetry: () => void;
+  onTitle: () => void;
 };
 
 /** Frames (60/s) as m:ss, tabular. */
@@ -155,12 +183,11 @@ export function makeOverlay(root: El): Overlay {
 
     showTitle(o) {
       const el = reset();
-      el.append(h('p', 'eyebrow', '8 JAHRE BERLIN'));
+      el.append(h('p', 'eyebrow', '34 JAHRE ALT'));
       el.append(h('h1', undefined, 'JONAS BIRTHDAY BASH'));
       el.append(h('p', 'lede', 'Geburtstags-Edition'));
       el.append(h('p', undefined, '„Vier Level. Ein Endgegner."'));
       el.append(h('div', 'rule'));
-      el.append(h('p', 'hint', 'Level 0: Kiel verlassen ✓'));
       el.append(h('div', 'spacer'));
 
       el.append(
@@ -258,6 +285,13 @@ export function makeOverlay(root: El): Overlay {
         const b = button(LEVEL_SHORT[level], () => o.onSelectLevel(level), 'quiet');
         levels.append(b);
       }
+      const ahBtn = button(
+        o.afterhourUnlocked ? AFTERHOUR_TITLE : `${AFTERHOUR_TITLE} · ${AFTERHOUR_LOCKED_HINT}`,
+        () => o.onSelectAfterhour(),
+        'quiet afterhour',
+      );
+      ahBtn.disabled = !o.afterhourUnlocked;
+      levels.append(ahBtn);
       body.append(h('p', 'hint', gift('levelSelect')));
       body.append(levels);
 
@@ -276,6 +310,39 @@ export function makeOverlay(root: El): Overlay {
         body.classList.add('fade-in');
         o.onDrop();
       });
+    },
+
+    showAfterhourIntro(o) {
+      const el = reset();
+      el.append(h('p', 'eyebrow', 'BONUS'));
+      el.append(h('h1', undefined, AFTERHOUR_TITLE));
+      el.append(h('p', 'lede', AFTERHOUR_SUB));
+      el.append(h('div', 'rule'));
+      el.append(h('p', undefined, AFTERHOUR_HOWTO));
+      if (o.bestLoops > 0) {
+        el.append(h('p', 'hint', `BESTE RUNDE: ${o.bestLoops} · ${formatFrames(o.bestFrames)}`));
+      }
+      el.append(h('div', 'spacer'));
+      el.append(button('LOS', o.onStart, 'primary'));
+      el.append(button('ZURÜCK', o.onBack, 'quiet'));
+    },
+
+    showAfterhourFail(o) {
+      const el = reset();
+      el.append(h('p', 'eyebrow', AFTERHOUR_TITLE));
+      el.append(h('h1', undefined, AFTERHOUR_FAIL));
+      el.append(h('p', undefined, `${o.loops} Runden überlebt · ${formatFrames(o.frames)}`));
+      if (o.isNewBest) el.append(h('p', 'hint', 'NEUE BESTE RUNDE'));
+      else if (o.bestLoops > 0) el.append(h('p', 'hint', `BESTE RUNDE: ${o.bestLoops}`));
+      el.append(h('div', 'spacer'));
+      el.append(button('NOCHMAL', o.onRetry, 'primary'));
+      const shareBtn = button('SCORE TEILEN', () => {
+        void copyShareText(buildShareText(o.loops)).then((ok) => {
+          shareBtn.textContent = ok ? 'KOPIERT' : buildShareText(o.loops);
+        });
+      }, 'quiet');
+      el.append(shareBtn);
+      el.append(button('ZUM TITEL', o.onTitle, 'quiet'));
     },
   };
 }

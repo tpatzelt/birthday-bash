@@ -13,7 +13,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { LEVEL_ORDER, type LevelId } from '../src/core/input.js';
-import { runLevel, type BotName } from '../src/core/bots.js';
+import { runLevel, runAfterhour, type BotName } from '../src/core/bots.js';
 import { modsForFails, TUNING } from '../src/config/tuning.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -148,6 +148,39 @@ lines.push('- The four medians land under the 5–7 minute target from DESIGN.md
 lines.push('  intro cards, fails and the reveal are added. That is the deliberate side to');
 lines.push('  err on at a party: a game that ends too soon still reaches the present, and');
 lines.push('  PLAN.md §4 spends the remaining time on finishing rather than lengthening.');
+lines.push('');
+
+// --- Afterhour: a survival/loops distribution, not a win-rate table --------
+// Capped well under the real (20-minute) hard frame cap: this is a decision
+// instrument sampled cheaply, not the no-soft-lock guarantee itself (that's
+// asserted at the real cap in tests/core/afterhour.test.ts).
+const AH_BOTS: BotName[] = ['perfect', 'casual', 'tipsy', 'idle'];
+const AH_SEEDS = Math.min(20, SEEDS);
+const AH_FRAME_CAP = 5 * 60 * 60; // 5 simulated minutes
+const ahRows = AH_BOTS.map((bot) => {
+  const loops: number[] = [];
+  const seconds: number[] = [];
+  for (let seed = 0; seed < AH_SEEDS; seed++) {
+    const r = runAfterhour(seed, bot, { frameCap: AH_FRAME_CAP });
+    loops.push(r.loops);
+    seconds.push(r.frames / 60);
+  }
+  return { bot, medianLoops: median(loops), medianSeconds: median(seconds) };
+});
+
+lines.push('## Afterhour (hidden endless bonus level)');
+lines.push('');
+lines.push(
+  `${AH_SEEDS} seeds per bot, capped at ${AH_FRAME_CAP / 60}s each (a cheap sample, not the real ` +
+    'hard cap). No win/lose gate — the only invariants tested are termination (no soft-lock, ever)',
+);
+lines.push('and a minimum-viability floor (see tests/core/afterhour.test.ts).');
+lines.push('');
+lines.push('| Bot | median loops survived | median duration |');
+lines.push('|---|---|---|');
+for (const r of ahRows) {
+  lines.push(`| ${r.bot} | ${r.medianLoops.toFixed(1)} | ${r.medianSeconds.toFixed(0)} s |`);
+}
 lines.push('');
 
 mkdirSync(dirname(OUT), { recursive: true });

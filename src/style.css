@@ -87,6 +87,10 @@ body {
 
 #overlay > * {
   pointer-events: auto;
+  /* The container scrolls when content is taller than the screen (see the
+     `safe center` comment above) — items must not shrink instead, or wrapped
+     text collapses into its min-height and overlaps the next line. */
+  flex-shrink: 0;
 }
 
 .eyebrow {
@@ -210,6 +214,17 @@ button.primary:active {
 .levels button[disabled] {
   opacity: 0.3;
   border-color: color-mix(in srgb, var(--haze) 30%, transparent);
+}
+
+.levels button.afterhour {
+  grid-column: 1 / -1;
+  border-color: var(--pink);
+  color: var(--pink);
+}
+
+.levels button.afterhour[disabled] {
+  border-color: color-mix(in srgb, var(--haze) 30%, transparent);
+  color: var(--haze);
 }
 
 /* --- the reveal ---------------------------------------------------------- */

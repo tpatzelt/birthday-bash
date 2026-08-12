@@ -1,17 +1,17 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`replay > katjes-casual replays to a stable state hash 1`] = `"4944cd09"`;
+exports[`replay > katjes-casual replays to a stable state hash 1`] = `"d103d37a"`;
 
-exports[`replay > katjes-win replays to a stable state hash 1`] = `"e57d3405"`;
+exports[`replay > katjes-win replays to a stable state hash 1`] = `"569798f4"`;
 
-exports[`replay > kayak-casual replays to a stable state hash 1`] = `"9e6cf27e"`;
+exports[`replay > kayak-casual replays to a stable state hash 1`] = `"634402d6"`;
 
-exports[`replay > kayak-win replays to a stable state hash 1`] = `"977805de"`;
+exports[`replay > kayak-win replays to a stable state hash 1`] = `"a2261fd2"`;
 
-exports[`replay > pfand-casual replays to a stable state hash 1`] = `"8798cd4c"`;
+exports[`replay > pfand-casual replays to a stable state hash 1`] = `"6dea15f1"`;
 
-exports[`replay > pfand-win replays to a stable state hash 1`] = `"217fd9ae"`;
+exports[`replay > pfand-win replays to a stable state hash 1`] = `"fe2b61d6"`;
 
-exports[`replay > sisyphos-casual replays to a stable state hash 1`] = `"3b5858be"`;
+exports[`replay > sisyphos-casual replays to a stable state hash 1`] = `"d6738251"`;
 
-exports[`replay > sisyphos-win replays to a stable state hash 1`] = `"ce9e5ece"`;
+exports[`replay > sisyphos-win replays to a stable state hash 1`] = `"af3fedd7"`;

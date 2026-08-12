@@ -33,6 +33,8 @@ export type KayakState = BaseState & {
   rocks: Rock[];
   /** Set on the winning frame: the whale breaches across the full width. */
   whale: boolean;
+  /** Frames until the next ambient-wildlife roll. Purely cosmetic, never touches Ruhe. */
+  wildlifeIn: number;
 };
 
 const ROCK_POOL = 12;
@@ -64,7 +66,7 @@ export function create(seed: number, h: number, mods: Mods): KayakState {
   const base = makeBase('kayak', seed, h, mods, 1);
   const rocks: Rock[] = new Array(ROCK_POOL);
   for (let i = 0; i < ROCK_POOL; i++) rocks[i] = { active: false, x: 0, wy: 0, r: T.rockR, phase: 0 };
-  return {
+  const s: KayakState = {
     ...base,
     level: 'kayak',
     x: channelCentre(0),
@@ -80,7 +82,14 @@ export function create(seed: number, h: number, mods: Mods): KayakState {
     nextRockWy: T.rockEveryPx,
     rocks,
     whale: false,
+    wildlifeIn: 0,
   };
+  s.wildlifeIn = rollWildlifeInterval(s);
+  return s;
+}
+
+function rollWildlifeInterval(s: KayakState): number {
+  return Math.round(randRange(s.rng, T.wildlifeIntervalMin, T.wildlifeIntervalMax) * 60);
 }
 
 function spawnRock(s: KayakState, wy: number): void {
@@ -133,6 +142,18 @@ export function step(s: KayakState, input: InputFrame): KayakState {
   // --- drift ----------------------------------------------------------------
   // Drifting wrong is slow, not fatal.
   s.travel += (s.inside ? T.speedInside : T.speedOutside) * DT;
+
+  // --- ambient wildlife: rewards sustained-high Ruhe, never reads it back ---
+  s.wildlifeIn--;
+  if (s.wildlifeIn <= 0) {
+    const chanceT = clamp01((s.ruhe - T.wildlifeRuheFloor) / (T.ruheMax - T.wildlifeRuheFloor));
+    const chance = lerp(T.wildlifeChanceLow, T.wildlifeChanceHigh, chanceT);
+    if (randBool(s.rng, chance)) {
+      const kind = randBool(s.rng, 0.5) ? 0 : 1; // 0 = fish jump, 1 = bird
+      emit(s, 'wildlife', randRange(s.rng, 30, W - 30), playerY(s.h) - randRange(s.rng, 40, 220), kind);
+    }
+    s.wildlifeIn = rollWildlifeInterval(s);
+  }
 
   // --- rocks ----------------------------------------------------------------
   const horizon = s.travel + playerY(s.h) + 120;
