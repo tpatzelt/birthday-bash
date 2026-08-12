@@ -66,8 +66,18 @@ body {
   inset: 0;
   display: none;
   flex-direction: column;
-  justify-content: center;
+  /* `safe center`: centers short cards exactly like plain `center` did, but
+     falls back to start-alignment once content is taller than the screen —
+     plain `center` overflows equally both ways there, clipping the top with
+     no way to scroll back up to it (scrollIntoView can't reach negative
+     space). Unsupported browsers drop the declaration and get `normal`,
+     which behaves like flex-start — still no clipping, just no centering. */
+  justify-content: safe center;
   padding: calc(34px + var(--safe-t)) 30px calc(34px + var(--safe-b));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
   pointer-events: none;
 }
 
@@ -258,6 +268,23 @@ button.primary:active {
   margin: 0;
 }
 
+.card-link {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--pink);
+  border-bottom: 1px solid var(--pink);
+  text-decoration: none;
+}
+
+.card-link:active {
+  color: var(--chalk);
+  border-color: var(--chalk);
+}
+
 .details {
   border: 1px solid color-mix(in srgb, var(--haze) 26%, transparent);
   padding: 18px 20px;
@@ -293,6 +320,22 @@ button.primary:active {
   letter-spacing: 0.1em;
   color: color-mix(in srgb, var(--haze) 75%, transparent);
   text-transform: uppercase;
+}
+
+.score {
+  text-align: center;
+  margin: 0 0 18px;
+}
+
+.score .hint {
+  margin: 0;
+}
+
+.score .time {
+  font-size: clamp(30px, 11vw, 42px);
+  font-weight: 800;
+  color: var(--chalk);
+  margin: 4px 0;
 }
 
 /* --- rotate hint --------------------------------------------------------- */

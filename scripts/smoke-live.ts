@@ -87,7 +87,10 @@ async function main(): Promise<void> {
     await page.waitForFunction(() => typeof (window as never as { __bb?: unknown }).__bb !== 'undefined', {
       timeout: 20_000,
     });
-    check((await page.locator('#overlay h1').textContent()) === 'BERLIN-QUEST', 'title screen renders');
+    check(
+      (await page.locator('#overlay h1').textContent()) === 'JONAS BIRTHDAY BASH',
+      'title screen renders',
+    );
 
     const version = await page.evaluate(() => (window as never as { __bb: { version: string } }).__bb.version);
     notes.push(`  →    live version: ${version}`);

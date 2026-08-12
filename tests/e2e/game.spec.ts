@@ -61,7 +61,7 @@ test.describe('cold load', () => {
     const errors = collectErrors(page);
     const t0 = Date.now();
     await page.goto('/');
-    await expect(page.locator('#overlay h1')).toHaveText('BERLIN-QUEST');
+    await expect(page.locator('#overlay h1')).toHaveText('JONAS BIRTHDAY BASH');
     expect(Date.now() - t0).toBeLessThan(4000);
     await expect(page.locator('#overlay')).toContainText('Vier Level. Ein Endgegner.');
     await expect(page.locator('#overlay')).toContainText('Level 0: Kiel verlassen');
@@ -113,9 +113,11 @@ test.describe('the whole gift', () => {
     await expect(overlay).toContainText('Du. Wir. Headsets. Bald.');
     // The practical details, straight from config/gift.ts.
     await expect(overlay).toContainText('WANN');
-    await expect(overlay).toContainText('15.08.2026');
+    await expect(overlay).toContainText('Dienstag');
     await expect(overlay).toContainText('WO');
     await expect(overlay).toContainText('WER');
+    // Four real wins, in one save: the high score must appear.
+    await expect(overlay).toContainText('DEINE ZEIT');
 
     const save = await page.evaluate(() => window.__bb.save());
     expect(save.revealed).toBe(true);
@@ -126,6 +128,9 @@ test.describe('the whole gift', () => {
     await page.goto('/?skip=1');
     await expect(page.locator('#overlay')).toHaveClass(/reveal/);
     await expect(page.locator('#overlay')).toContainText('SANDBOX VR', { timeout: 20_000 });
+    // No level was actually won, so there is no time to show — and nothing to
+    // punish him for skipping straight to the present.
+    await expect(page.locator('#overlay')).not.toContainText('DEINE ZEIT');
   });
 
   test('offers "zum Geschenk" on the title screen once seen', async ({ page }) => {
@@ -248,7 +253,7 @@ test.describe('device conditions', () => {
       // assertions below still catch a genuinely broken service worker.
       if (browserName !== 'webkit') throw err;
     });
-    await expect(page.locator('#overlay h1')).toHaveText('BERLIN-QUEST');
+    await expect(page.locator('#overlay h1')).toHaveText('JONAS BIRTHDAY BASH');
     await ready(page);
     await context.setOffline(false);
   });

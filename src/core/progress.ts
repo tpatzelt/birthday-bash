@@ -12,6 +12,9 @@ import { modsForFails, TUNING, type Mods } from '../config/tuning.js';
 export const SAVE_VERSION = 1;
 export const SAVE_KEY = 'bb.save.v1';
 
+/** A generous per-level cap on stored clear time (frames at 60/s ≈ 4.6 h) — just a sanity clamp on untrusted JSON. */
+const MAX_FRAMES = 999_999;
+
 export type SaveData = {
   v: typeof SAVE_VERSION;
   /**
@@ -23,6 +26,14 @@ export type SaveData = {
   /** Write-once. Nobody should have to re-earn a present. */
   revealed: boolean;
   muted: boolean;
+  /**
+   * Frames (at 60/s) of the fastest clear of each level, 0 = never cleared.
+   * Frame counts, not `Date.now()` — this stays a pure function of the
+   * deterministic core, not wall-clock time.
+   */
+  times: Record<LevelId, number>;
+  /** Fastest four-level total ever recorded, in frames. null = never completed all four in one save. */
+  bestTotalFrames: number | null;
 };
 
 export function defaultSave(): SaveData {
@@ -32,6 +43,8 @@ export function defaultSave(): SaveData {
     fails: { pfand: 0, sisyphos: 0, katjes: 0, kayak: 0 },
     revealed: false,
     muted: false,
+    times: { pfand: 0, sisyphos: 0, katjes: 0, kayak: 0 },
+    bestTotalFrames: null,
   };
 }
 
@@ -55,6 +68,14 @@ export function sanitizeSave(raw: unknown): SaveData {
   if (r.fails && typeof r.fails === 'object') {
     for (const id of LEVEL_ORDER) out.fails[id] = intIn(r.fails[id], 0, 99, 0);
   }
+  const times = (r as { times?: Partial<Record<LevelId, unknown>> }).times;
+  if (times && typeof times === 'object') {
+    for (const id of LEVEL_ORDER) out.times[id] = intIn(times[id], 0, MAX_FRAMES, 0);
+  }
+  out.bestTotalFrames =
+    typeof r.bestTotalFrames === 'number' && Number.isFinite(r.bestTotalFrames)
+      ? Math.max(0, Math.min(MAX_FRAMES * LEVEL_ORDER.length, Math.floor(r.bestTotalFrames)))
+      : null;
   return out;
 }
 
@@ -80,6 +101,35 @@ export function recordFail(save: SaveData, level: LevelId): SaveData {
 export function recordClear(save: SaveData, level: LevelId): SaveData {
   save.unlocked = Math.max(save.unlocked, Math.min(LEVEL_ORDER.length + 1, levelIndex(level) + 2));
   return save;
+}
+
+/** Only an actual win records a time — a skipped level has none, by design (DESIGN.md §8). */
+export function recordLevelTime(save: SaveData, level: LevelId, frames: number): SaveData {
+  const clamped = Math.max(0, Math.min(MAX_FRAMES, Math.floor(frames)));
+  const prev = save.times[level];
+  save.times[level] = prev > 0 ? Math.min(prev, clamped) : clamped;
+  return save;
+}
+
+/** Sum of the best clear times, or null until every level has one on record. */
+export function totalTimeFrames(save: SaveData): number | null {
+  let total = 0;
+  for (const id of LEVEL_ORDER) {
+    if (save.times[id] <= 0) return null;
+    total += save.times[id];
+  }
+  return total;
+}
+
+/** Call once all four are cleared. Returns true when this run set a new personal best. */
+export function updateBestTotal(save: SaveData): boolean {
+  const total = totalTimeFrames(save);
+  if (total === null) return false;
+  if (save.bestTotalFrames === null || total < save.bestTotalFrames) {
+    save.bestTotalFrames = total;
+    return true;
+  }
+  return false;
 }
 
 export function markRevealed(save: SaveData): SaveData {

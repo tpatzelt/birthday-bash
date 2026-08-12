@@ -9,7 +9,15 @@
 import { TUNING, W } from '../../config/tuning.js';
 import { playerY, type KatjesState, type Falling } from '../../core/levels/katjes.js';
 import { drawGlyph } from '../atlas.js';
-import { CHALK, HAZE, PINK, VEG_GREEN, VEG_ORANGE, VEG_PURPLE } from '../palette.js';
+import {
+  CHALK,
+  KATJES_BLUE,
+  KATJES_BLUE_LIGHT,
+  PINK,
+  VEG_GREEN,
+  VEG_ORANGE,
+  VEG_PURPLE,
+} from '../palette.js';
 import { verticalGradient, vignette } from './shared.js';
 
 const T = TUNING.katjes;
@@ -58,7 +66,20 @@ function drawItem(ctx: CanvasRenderingContext2D, it: Falling, frame: number): vo
   }
 }
 
-/** The Hering: flat, black-and-white, unmistakably *not* a vegetable. */
+/** Salt crystals scattered on the Hering's back — fixed offsets, never random (core/render stays deterministic). */
+const SALT_DOTS: ReadonlyArray<[number, number, number]> = [
+  [-6, -3.5, 0.9],
+  [-1, -4, 0.7],
+  [4, -3, 0.8],
+  [-3, 1.5, 0.7],
+  [2.5, 2, 0.9],
+  [-8, 0.5, 0.6],
+];
+
+/**
+ * The Hering: flat, black-and-white, unmistakably *not* a vegetable — and,
+ * per the actual Katjes Salzige Heringe, visibly rolled in coarse salt.
+ */
 function drawHering(ctx: CanvasRenderingContext2D, x: number, y: number, rot: number): void {
   ctx.save();
   ctx.translate(x, y);
@@ -82,6 +103,13 @@ function drawHering(ctx: CanvasRenderingContext2D, x: number, y: number, rot: nu
   ctx.beginPath();
   ctx.arc(-10, -1.5, 1.6, 0, Math.PI * 2);
   ctx.fill();
+  // Coarse salt, clipped to the body so it doesn't spill onto the tail.
+  ctx.fillStyle = 'rgba(243,240,255,0.85)';
+  for (const [sx, sy, sr] of SALT_DOTS) {
+    ctx.beginPath();
+    ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -123,7 +151,10 @@ function drawVeg(ctx: CanvasRenderingContext2D, it: Falling, rot: number): void 
   drawGlyph(ctx, VEG_GLYPHS[it.variant % 3], it.x, it.y, 32, rot);
 }
 
-/** The Tüte: an open paper bag, hand-drawn. */
+/**
+ * The Tüte: the actual Katjes bag, not a generic paper sack — their brand
+ * blue, the cat-ear mark, and the wordmark in white.
+ */
 function drawBag(ctx: CanvasRenderingContext2D, s: KatjesState, py: number, frame: number): void {
   const w = T.playerW;
   const blink = s.invuln > 0 && Math.floor(frame / 4) % 2 === 0;
@@ -135,7 +166,10 @@ function drawBag(ctx: CanvasRenderingContext2D, s: KatjesState, py: number, fram
   ctx.translate(s.x, py);
   ctx.rotate(tilt);
 
-  ctx.fillStyle = '#1A1638';
+  const grad = ctx.createLinearGradient(0, 0, 0, 58);
+  grad.addColorStop(0, KATJES_BLUE_LIGHT);
+  grad.addColorStop(1, KATJES_BLUE);
+  ctx.fillStyle = grad;
   ctx.beginPath();
   ctx.moveTo(-w / 2, 0);
   ctx.lineTo(w / 2, 0);
@@ -145,7 +179,7 @@ function drawBag(ctx: CanvasRenderingContext2D, s: KatjesState, py: number, fram
   ctx.fill();
 
   // The open mouth of the bag — the actual catch surface.
-  ctx.fillStyle = '#0A0918';
+  ctx.fillStyle = '#0B3E85';
   ctx.beginPath();
   ctx.ellipse(0, 0, w / 2, 8, 0, 0, Math.PI * 2);
   ctx.fill();
@@ -155,10 +189,34 @@ function drawBag(ctx: CanvasRenderingContext2D, s: KatjesState, py: number, fram
   ctx.ellipse(0, 0, w / 2, 8, 0, 0, Math.PI * 2);
   ctx.stroke();
 
-  ctx.fillStyle = HAZE;
+  // The cat-ear mark: two small triangles over a round head, the
+  // silhouette every Katjes bag carries above the wordmark.
+  ctx.fillStyle = CHALK;
+  ctx.beginPath();
+  ctx.arc(0, 20, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(-6, 16);
+  ctx.lineTo(-8, 8);
+  ctx.lineTo(-1, 14);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(6, 16);
+  ctx.lineTo(8, 8);
+  ctx.lineTo(1, 14);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = KATJES_BLUE;
+  ctx.beginPath();
+  ctx.arc(-2.5, 20.5, 1, 0, Math.PI * 2);
+  ctx.arc(2.5, 20.5, 1, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = CHALK;
   ctx.font = '800 9px ui-sans-serif, system-ui, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('KATJES', 0, 34);
+  ctx.fillText('KATJES', 0, 40);
   ctx.textAlign = 'left';
   ctx.restore();
 

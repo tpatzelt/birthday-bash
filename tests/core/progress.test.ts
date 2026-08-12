@@ -10,8 +10,11 @@ import {
   offersSkip,
   recordClear,
   recordFail,
+  recordLevelTime,
   sanitizeSave,
   SAVE_VERSION,
+  totalTimeFrames,
+  updateBestTotal,
 } from '../../src/core/progress.js';
 import { LEVEL_ORDER } from '../../src/core/input.js';
 import { TUNING } from '../../src/config/tuning.js';
@@ -119,5 +122,62 @@ describe('mercy rules', () => {
     const save = defaultSave();
     for (let i = 0; i < 200; i++) recordFail(save, 'pfand');
     expect(save.fails.pfand).toBe(99);
+  });
+});
+
+describe('high score', () => {
+  it('has no total until every level has a recorded time', () => {
+    const save = defaultSave();
+    expect(totalTimeFrames(save)).toBeNull();
+    for (const level of LEVEL_ORDER) recordLevelTime(save, level, 600);
+    expect(totalTimeFrames(save)).toBe(600 * LEVEL_ORDER.length);
+  });
+
+  it('keeps the fastest clear, not the latest', () => {
+    const save = defaultSave();
+    recordLevelTime(save, 'pfand', 900);
+    recordLevelTime(save, 'pfand', 700); // faster replay
+    expect(save.times.pfand).toBe(700);
+    recordLevelTime(save, 'pfand', 950); // slower replay: ignored
+    expect(save.times.pfand).toBe(700);
+  });
+
+  it('records a new best only when the total actually improves', () => {
+    const save = defaultSave();
+    for (const level of LEVEL_ORDER) recordLevelTime(save, level, 600);
+    expect(updateBestTotal(save)).toBe(true);
+    expect(save.bestTotalFrames).toBe(600 * LEVEL_ORDER.length);
+
+    // Same total again: no longer a new record.
+    expect(updateBestTotal(save)).toBe(false);
+    expect(save.bestTotalFrames).toBe(600 * LEVEL_ORDER.length);
+
+    // A slower total: not a new record, and the old best survives.
+    const bestBefore = save.bestTotalFrames;
+    for (const level of LEVEL_ORDER) recordLevelTime(save, level, 700);
+    // recordLevelTime keeps the minimum, so times are still 600 each; force a
+    // genuinely worse total the way a fresh, slower save would arrive with one.
+    save.times.kayak = 900;
+    expect(updateBestTotal(save)).toBe(false);
+    expect(save.bestTotalFrames).toBe(bestBefore);
+  });
+
+  it('does not record a time for a skipped level', () => {
+    const save = defaultSave();
+    recordClear(save, 'pfand'); // "Überspringen": cleared, never won
+    expect(save.times.pfand).toBe(0);
+    expect(totalTimeFrames(save)).toBeNull();
+  });
+
+  it('sanitises times and bestTotalFrames from untrusted JSON', () => {
+    const s = sanitizeSave({
+      v: SAVE_VERSION,
+      times: { pfand: -5, sisyphos: 1e9, katjes: 'nope' },
+      bestTotalFrames: 'nope',
+    });
+    expect(s.times.pfand).toBe(0);
+    expect(s.times.sisyphos).toBeLessThanOrEqual(999_999);
+    expect(s.times.katjes).toBe(0);
+    expect(s.bestTotalFrames).toBeNull();
   });
 });

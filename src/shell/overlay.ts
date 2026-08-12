@@ -107,7 +107,21 @@ export type RevealOptions = {
   onSelectLevel: (level: LevelId) => void;
   unlocked: number;
   reducedMotion: boolean;
+  /** Sum of the four best clear times, in frames. null if a level was skipped rather than won. */
+  totalFrames: number | null;
+  /** All-time best total, in frames. null before the first full clear. */
+  bestFrames: number | null;
+  /** Whether this run's total just became the new best. */
+  isNewBest: boolean;
 };
+
+/** Frames (60/s) as m:ss, tabular. */
+function formatFrames(frames: number): string {
+  const totalSeconds = Math.round(frames / 60);
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
 
 export function makeOverlay(root: El): Overlay {
   let timers: Array<ReturnType<typeof setTimeout>> = [];
@@ -141,9 +155,9 @@ export function makeOverlay(root: El): Overlay {
 
     showTitle(o) {
       const el = reset();
-      el.append(h('p', 'eyebrow', 'BERLIN-ZERTIFIZIERUNG'));
-      el.append(h('h1', undefined, 'BERLIN-QUEST'));
-      el.append(h('p', 'lede', 'Jonas Edition'));
+      el.append(h('p', 'eyebrow', '8 JAHRE BERLIN'));
+      el.append(h('h1', undefined, 'JONAS BIRTHDAY BASH'));
+      el.append(h('p', 'lede', 'Geburtstags-Edition'));
       el.append(h('p', undefined, '„Vier Level. Ein Endgegner."'));
       el.append(h('div', 'rule'));
       el.append(h('p', 'hint', 'Level 0: Kiel verlassen ✓'));
@@ -202,6 +216,13 @@ export function makeOverlay(root: El): Overlay {
       card.append(h('h1', undefined, gift('cardTitle')));
       card.append(h('p', 'city', gift('cardCity')));
       card.append(h('p', 'tagline', gift('cardTagline')));
+      const link = document.createElement('a');
+      link.className = 'card-link';
+      link.href = gift('cardLinkHref');
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = gift('cardLinkLabel');
+      card.append(link);
       body.append(card);
 
       const details = h('div', 'details');
@@ -213,6 +234,22 @@ export function makeOverlay(root: El): Overlay {
       details.append(dl);
       body.append(details);
       body.append(h('p', 'outro', gift('outro')));
+
+      if (o.totalFrames !== null) {
+        const score = h('div', 'score');
+        score.append(h('p', 'hint', 'DEINE ZEIT'));
+        score.append(h('p', 'time num', formatFrames(o.totalFrames)));
+        score.append(
+          h(
+            'p',
+            'hint',
+            o.isNewBest
+              ? 'NEUE BESTZEIT'
+              : `BESTZEIT: ${formatFrames(o.bestFrames ?? o.totalFrames)}`,
+          ),
+        );
+        body.append(score);
+      }
 
       body.append(button(gift('playAgain'), o.onPlayAgain, 'primary'));
 

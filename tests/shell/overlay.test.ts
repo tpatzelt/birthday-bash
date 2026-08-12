@@ -22,7 +22,7 @@ describe('gift config', () => {
   it('decodes UTF-8, umlauts and all', () => {
     expect(dec('TEVWRUwgV8OESExFTg==')).toBe('LEVEL WÄHLEN');
     expect(gift('cardTitle')).toBe('SANDBOX VR');
-    expect(gift('valueWhen')).toContain('15.08.2026');
+    expect(gift('valueWhen')).toContain('Dienstag');
   });
 
   it('keeps the reveal out of plain sight in the bundle', async () => {
@@ -45,7 +45,7 @@ describe('overlay', () => {
       onToggleMute: () => undefined,
       onGift: () => undefined,
     });
-    expect(root.textContent).toContain('BERLIN-QUEST');
+    expect(root.textContent).toContain('JONAS BIRTHDAY BASH');
     expect(root.textContent).toContain('Level 0: Kiel verlassen');
     // No gift button before the reveal has ever been seen.
     expect(root.textContent).not.toContain('ZUM GESCHENK');
@@ -91,6 +91,9 @@ describe('overlay', () => {
     overlay.showReveal({
       unlocked: 5,
       reducedMotion: true,
+      totalFrames: 60 * 111,
+      bestFrames: 60 * 97,
+      isNewBest: false,
       onDrop: drop,
       onPlayAgain: () => undefined,
       onSelectLevel: () => undefined,
@@ -102,7 +105,13 @@ describe('overlay', () => {
     for (const key of BUILD_LINES) expect(text).toContain(gift(key));
     expect(text).toContain(gift('cardTitle'));
     expect(text).toContain(gift('cardCity'));
+    expect(text).toContain('DEINE ZEIT');
+    expect(text).toContain('1:51');
+    expect(text).toContain('BESTZEIT: 1:37');
     expect(text).toContain(gift('cardTagline'));
+    expect(text).toContain(gift('cardLinkLabel'));
+    const link = root.querySelector('a.card-link') as HTMLAnchorElement | null;
+    expect(link?.getAttribute('href')).toBe(gift('cardLinkHref'));
     for (const row of DETAIL_ROWS) {
       expect(text).toContain(gift(row.label));
       // Values may be multi-line; check the first line.
@@ -110,6 +119,42 @@ describe('overlay', () => {
     }
     expect(drop).toHaveBeenCalledTimes(1);
     expect(root.className).toContain('reveal');
+  });
+
+  it('announces a new best instead of the old one', async () => {
+    vi.useFakeTimers();
+    const { root, overlay } = mount();
+    overlay.showReveal({
+      unlocked: 5,
+      reducedMotion: true,
+      totalFrames: 60 * 90,
+      bestFrames: 60 * 90,
+      isNewBest: true,
+      onDrop: () => undefined,
+      onPlayAgain: () => undefined,
+      onSelectLevel: () => undefined,
+    });
+    await vi.advanceTimersByTimeAsync(6000);
+    vi.useRealTimers();
+    expect(root.textContent).toContain('NEUE BESTZEIT');
+  });
+
+  it('has no high score section without a full, unskipped clear', async () => {
+    vi.useFakeTimers();
+    const { root, overlay } = mount();
+    overlay.showReveal({
+      unlocked: 5,
+      reducedMotion: true,
+      totalFrames: null,
+      bestFrames: null,
+      isNewBest: false,
+      onDrop: () => undefined,
+      onPlayAgain: () => undefined,
+      onSelectLevel: () => undefined,
+    });
+    await vi.advanceTimersByTimeAsync(6000);
+    vi.useRealTimers();
+    expect(root.textContent).not.toContain('DEINE ZEIT');
   });
 
   it('hides cleanly', () => {

@@ -1,6 +1,6 @@
 # birthday-bash
 
-**BERLIN-QUEST: JONAS EDITION** — a four-level mobile browser game built as a
+**JONAS BIRTHDAY BASH** — a four-level mobile browser game built as a
 birthday present. Beating it reveals the actual gift: a visit to Sandbox VR
 Berlin.
 

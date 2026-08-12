@@ -4,9 +4,9 @@ exports[`replay > katjes-casual replays to a stable state hash 1`] = `"4944cd09"
 
 exports[`replay > katjes-win replays to a stable state hash 1`] = `"e57d3405"`;
 
-exports[`replay > kayak-casual replays to a stable state hash 1`] = `"8a56120f"`;
+exports[`replay > kayak-casual replays to a stable state hash 1`] = `"9e6cf27e"`;
 
-exports[`replay > kayak-win replays to a stable state hash 1`] = `"f3d3ce1f"`;
+exports[`replay > kayak-win replays to a stable state hash 1`] = `"977805de"`;
 
 exports[`replay > pfand-casual replays to a stable state hash 1`] = `"8798cd4c"`;
 

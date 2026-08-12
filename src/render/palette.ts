@@ -12,3 +12,7 @@ export const CHALK = '#F3F0FF';
 export const VEG_GREEN = '#5ED17A';
 export const VEG_ORANGE = '#FF8A3D';
 export const VEG_PURPLE = '#9B5DE5';
+
+/** The Tüte reads as the actual Katjes bag, so it borrows their brand blue. */
+export const KATJES_BLUE = '#1361C9';
+export const KATJES_BLUE_LIGHT = '#3E85E8';

@@ -118,21 +118,57 @@ function tree(ctx: CanvasRenderingContext2D, x: number, y: number, r: number): v
   ctx.fill();
 }
 
+/**
+ * The Türsteher: a doorman archetype, not a portrait — bald head, dark
+ * wraparound sunglasses, arms crossed, built like a wall. Sven Marquardt is
+ * the reference silhouette (bald, shades, folded arms at the Berghain door),
+ * kept abstract enough to still read as a flat flyer silhouette at 44 px.
+ */
 function drawBouncer(ctx: CanvasRenderingContext2D, x: number, y: number, vx: number, ignored: boolean): void {
   ctx.globalAlpha = ignored ? 0.32 : 1;
-  // Shoulders first: the silhouette is the whole character.
-  ctx.fillStyle = ignored ? '#3A3560' : '#1B1740';
+  const body = ignored ? '#3A3560' : '#1B1740';
+  const shade = ignored ? '#4A4472' : '#241F52';
+
+  // Shoulders first, a touch wider than before: the silhouette is the whole
+  // character, and a bouncer reads as mass before anything else.
+  ctx.fillStyle = body;
   ctx.beginPath();
-  ctx.ellipse(x, y + 6, T.bouncerR, T.bouncerR * 0.78, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = ignored ? '#4A4472' : '#241F52';
-  ctx.beginPath();
-  ctx.arc(x, y - 6, 10, 0, Math.PI * 2);
+  ctx.ellipse(x, y + 6, T.bouncerR * 1.08, T.bouncerR * 0.78, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // A hint of a face turned the way he is walking, and the torch.
-  ctx.fillStyle = ignored ? 'rgba(243,240,255,0.35)' : CHALK;
-  ctx.fillRect(x + (vx > 0 ? 3 : -7), y - 9, 4, 2);
+  // Arms folded across the chest — the door stance.
+  ctx.fillStyle = shade;
+  ctx.beginPath();
+  ctx.ellipse(x - T.bouncerR * 0.34, y + 3, T.bouncerR * 0.46, T.bouncerR * 0.24, 0.25, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(x + T.bouncerR * 0.34, y + 3, T.bouncerR * 0.46, T.bouncerR * 0.24, -0.25, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Bald head.
+  ctx.fillStyle = shade;
+  ctx.beginPath();
+  ctx.arc(x, y - 7, 11, 0, Math.PI * 2);
+  ctx.fill();
+  // A jawline shadow so the head doesn't read as a plain ball.
+  ctx.fillStyle = body;
+  ctx.beginPath();
+  ctx.arc(x, y - 1, 8, 0, Math.PI);
+  ctx.fill();
+
+  // Wraparound sunglasses — the one feature that has to survive a dark room
+  // and a phone at low brightness, so it is pure black, not just tinted.
+  ctx.fillStyle = '#050410';
+  ctx.beginPath();
+  ctx.roundRect(x - 10, y - 10, 20, 6, 3);
+  ctx.fill();
+  // A single cold highlight on the lens facing the direction he's walking.
+  ctx.fillStyle = ignored ? 'rgba(35,211,196,0.25)' : 'rgba(35,211,196,0.55)';
+  ctx.beginPath();
+  ctx.ellipse(x + (vx > 0 ? 3.5 : -3.5), y - 7.5, 3, 1.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Badge/torch clip at the belt.
   ctx.fillStyle = 'rgba(255,45,111,0.5)';
   ctx.fillRect(x - 2, y + 14, 4, 4);
   ctx.globalAlpha = 1;

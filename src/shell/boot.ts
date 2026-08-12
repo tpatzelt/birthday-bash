@@ -28,6 +28,9 @@ import {
   offersSkip,
   recordClear,
   recordFail,
+  recordLevelTime,
+  totalTimeFrames,
+  updateBestTotal,
   type SaveData,
 } from '../core/progress.js';
 import { hashState } from '../core/state.js';
@@ -195,7 +198,11 @@ function afterLevel(level: LevelId): void {
   else goIntro(next);
 }
 
-function goWin(level: LevelId): void {
+function goWin(level: LevelId, frames: number): void {
+  // Only an actual win sets a time — "Überspringen" leaves it unset, so the
+  // total (and the high score) simply doesn't appear rather than punish him
+  // for taking the mercy rule (DESIGN.md §8).
+  recordLevelTime(save, level, frames);
   if (level === 'kayak') {
     // Straight out of the whale's splash, without a menu in between.
     recordClear(save, level);
@@ -203,6 +210,7 @@ function goWin(level: LevelId): void {
     goReveal(true);
     return;
   }
+  persist();
   phase = 'win';
   overlay.showWin(level, () => afterLevel(level));
 }
@@ -211,12 +219,16 @@ function goReveal(fresh: boolean): void {
   phase = 'reveal';
   sim = null;
   save = markRevealed(save);
+  const isNewBest = updateBestTotal(save);
   persist();
   setScene(scheduler, 'reveal', !fresh);
   if (fresh && !reducedMotion) playRiser(engine, 3.2);
   overlay.showReveal({
     unlocked: save.unlocked,
     reducedMotion,
+    totalFrames: totalTimeFrames(save),
+    bestFrames: save.bestTotalFrames,
+    isNewBest,
     onDrop: () => {
       playDrop(engine);
       confetti(particles, W, canvasHeight(vp.cssW, vp.cssH), reducedMotion ? 30 : 140);
@@ -266,8 +278,12 @@ function fixedStep(): void {
       const level = sim.level;
       if (level === 'kayak') whiteout = Math.min(1, whiteout + 0.06);
       if (level !== 'kayak' || whiteout >= 1) {
+        // `frame` froze the tick the level flipped to 'win' (step() no-ops
+        // once status !== 'run'), so this is the real clear time, not the
+        // hold-animation padding.
+        const frames = sim.frame;
         sim = null;
-        goWin(level);
+        goWin(level, frames);
       }
     }
   }
