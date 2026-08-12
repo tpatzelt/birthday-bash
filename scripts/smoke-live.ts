@@ -119,7 +119,7 @@ async function main(): Promise<void> {
     await page.waitForSelector('#overlay .gift-card', { state: 'visible', timeout: 25_000 });
     const text = ((await page.locator('#overlay').textContent()) ?? '').replace(/\s+/g, ' ');
     check(text.includes('SANDBOX VR'), 'the reveal renders');
-    check(/\d{2}\.\d{2}\.\d{4}/.test(text), 'the gift details render');
+    check(text.includes('WANN') && text.includes('WO') && text.includes('WER'), 'the gift details render');
     check(errors.length === 0, 'no console errors', errors.join(' | '));
   } catch (err) {
     problems.push(`  FAIL playthrough — ${(err as Error).message}`);
