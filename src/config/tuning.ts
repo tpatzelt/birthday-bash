@@ -21,7 +21,7 @@ export function canvasHeight(vw: number, vh: number): number {
 
 export const TUNING = {
   pfand: {
-    goalBottles: 20,
+    goalBottles: 26,
     centsPerBottle: 25,
     lives: 3,
     playerX: 92,
@@ -33,11 +33,11 @@ export const TUNING = {
     coyoteMs: 100,
     bufferMs: 120,
     speedBase: 240,
-    speedRamp: 2.7, // px/s per second
-    speedRampMax: 160,
+    speedRamp: 3.4, // px/s per second
+    speedRampMax: 200,
     gapMin: 210,
     gapMax: 340,
-    pfandShare: 0.55, // rest are obstacles
+    pfandShare: 0.52, // rest are obstacles
     clusterMin: 1,
     clusterMax: 3,
     arcShare: 0.45, // share of clusters placed on a jump arc
@@ -59,7 +59,7 @@ export const TUNING = {
   },
 
   sisyphos: {
-    goalPx: 2600,
+    goalPx: 3000,
     lives: 3,
     playerYOffset: 170, // player y = H - playerYOffset
     playerR: 16,
@@ -69,7 +69,7 @@ export const TUNING = {
     bouncerR: 22,
     bouncerSpeedMin: 60,
     bouncerSpeedMax: 130,
-    twoBouncerChance: 0.45,
+    twoBouncerChance: 0.52,
     pushBackPx: 260,
     invulnMs: 1500,
     shadesEveryPx: 700,
@@ -85,7 +85,7 @@ export const TUNING = {
   },
 
   katjes: {
-    goalFish: 25,
+    goalFish: 28,
     lives: 3,
     playerYOffset: 120,
     playerW: 62,
@@ -93,8 +93,8 @@ export const TUNING = {
     spawnIntervalStart: 0.62,
     spawnIntervalEnd: 0.34,
     rampSeconds: 45,
-    fallSpeedStart: 210,
-    fallSpeedEnd: 340,
+    fallSpeedStart: 225,
+    fallSpeedEnd: 370,
     shareFish: 0.65,
     shareVeg: 0.27,
     shareBonus: 0.08,
@@ -112,7 +112,7 @@ export const TUNING = {
   },
 
   kayak: {
-    goalPx: 4800,
+    goalPx: 5400,
     playerYOffset: 190,
     lerpRate: 6,
     ruheStart: 100,
@@ -125,7 +125,7 @@ export const TUNING = {
     speedInside: 130,
     speedOutside: 78,
     halfWidthStart: 84,
-    halfWidthEnd: 62,
+    halfWidthEnd: 58,
     rockEveryPx: 450,
     rockR: 28,
     rockHitRuhe: 18,

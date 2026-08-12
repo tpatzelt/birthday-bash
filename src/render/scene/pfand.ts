@@ -314,7 +314,7 @@ function drawRunner(ctx: CanvasRenderingContext2D, s: PfandState, g: number, fra
   ctx.globalAlpha = 1;
   ctx.lineCap = 'butt';
 
-  // At 5,00 € the Pfandautomat spits out the Bon.
+  // At the goal the Pfandautomat spits out the Bon.
   if (s.status === 'win') {
     ctx.fillStyle = INK;
     drawGlyph(ctx, 'receipt', W / 2, s.h * 0.42, 64);

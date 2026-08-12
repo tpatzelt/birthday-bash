@@ -148,6 +148,21 @@ lines.push('- The four medians land under the 5–7 minute target from DESIGN.md
 lines.push('  intro cards, fails and the reveal are added. That is the deliberate side to');
 lines.push('  err on at a party: a game that ends too soon still reaches the present, and');
 lines.push('  PLAN.md §4 spends the remaining time on finishing rather than lengthening.');
+lines.push('- The difficulty pass raised every goal (26 Flaschen, 3000 px queue, 28');
+lines.push('  Heringe, 5400 px river) and, where the bots had room, the rate the level');
+lines.push('  comes at you. What bounded each level was not taste but a gate:');
+lines.push('  - **L1** — `tipsy`. Obstacle share and spawn gap are savage to it: 0.46');
+lines.push('    share took tipsy to 48 %, and tightening the gap to 185–300 px to 15 %.');
+lines.push('    Length and the speed ramp cost it far less, so the goal carries the pass.');
+lines.push('  - **L2** — `perfect`, and it is a design signal, not a bot weakness: a');
+lines.push('    two-bouncer row can close its gap, and the Sonnenbrille is what carries a');
+lines.push('    perfect line through. Shortening `shadesDurationMs` dropped perfect to');
+lines.push('    95 %. Hence a longer queue and a modest `twoBouncerChance`, nothing more.');
+lines.push('  - **L3** — `tipsy` again; 32 Heringe put it on the 50 % line, 28 leaves air.');
+lines.push('  - **L4** — `idle`. Narrowing the channel or thickening the rock field guts');
+lines.push('    it (10 % and 8 %), and doing nothing must stay the safest play, not a');
+lines.push('    trap — the joke in DESIGN.md §4 depends on it. A longer, slightly');
+lines.push('    narrower river keeps idle at a comfortable margin over its 35 % floor.');
 lines.push('');
 
 // --- Afterhour: a survival/loops distribution, not a win-rate table --------

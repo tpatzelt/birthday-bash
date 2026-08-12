@@ -13,7 +13,8 @@ import { makeInput } from '../../src/core/input.js';
 import { makeRng, rand, randRange } from '../../src/core/rng.js';
 import { botInput, makeBot } from '../../src/core/bots.js';
 import { findNonFinite } from '../../src/core/state.js';
-import { W } from '../../src/config/tuning.js';
+import { DT, TUNING, W } from '../../src/config/tuning.js';
+import type { PfandState } from '../../src/core/levels/pfand.js';
 
 const SEEDS = 250;
 
@@ -59,11 +60,29 @@ describe('fuzz', () => {
     }
   });
 
+  it('never spawns two obstacles closer than a landing plus a fresh jump', () => {
+    const P = TUNING.pfand;
+    // The spawn gap scales with the speed ramp, so wave-to-wave *time* is
+    // constant however fast the level gets: gapMin / speedBase.
+    const waveGapS = P.gapMin / P.speedBase;
+    const tallest = Math.max(...P.obstacles.map((o) => o.h));
+    const airtime = (-2 * P.jumpImpulse) / P.gravity - DT;
+    // Worst case, back to back: the first obstacle is cleared as late as it can
+    // be, so the feet touch down as late as they can...
+    const latestLanding = airtime - tClearOf(tallest);
+    // ...and the next one still needs its jump begun tClear before it arrives.
+    const latestStart = waveGapS - tClearOf(tallest);
+    // Anything below zero here is a spawn table that can demand a jump from
+    // mid-air. Four frames is the margin a thumb needs to exist at all.
+    expect(latestStart - latestLanding).toBeGreaterThan(4 * DT);
+  });
+
   it('has no unavoidable-death configuration: some input always survives', () => {
     // A shallow lookahead search, not an exhaustive one. States are sampled
     // from an ordinary (casual-bot) playthrough rather than from idle input,
     // and only while the player is *neutral* — on the ground, not already
-    // inside a hit. Otherwise this would assert something much stronger than
+    // inside a hit, nothing already past the last moment it could have been
+    // answered. Otherwise this would assert something much stronger than
     // fairness: that you can always escape a hole you are already in.
     for (const level of LEVEL_ORDER) {
       for (let seed = 0; seed < 12; seed++) {
@@ -83,9 +102,49 @@ describe('fuzz', () => {
 /** A position a player could reasonably be expected to escape from. */
 function neutral(s: AnyLevelState): boolean {
   if (s.invuln > 0) return false;
-  if (s.level === 'pfand') return s.onGround;
+  if (s.level === 'pfand') return s.onGround && nothingPastTheLastMoment(s);
   if (s.level === 'kayak') return s.ruhe > 25;
   return true;
+}
+
+/**
+ * Height of the feet `t` seconds into a jump, for the discrete integrator the
+ * level actually runs (mirrors bots.ts).
+ */
+function jumpHeight(t: number): number {
+  const P = TUNING.pfand;
+  const h = -P.jumpImpulse * t - 0.5 * P.gravity * t * (t + DT);
+  return h > 0 ? h : 0;
+}
+
+/**
+ * Standing on the ground with a Baustellenzaun 10 px from your face is not a
+ * spawn-table bug — it is a jump missed half a second ago, and no input from
+ * *here* saves it. A state only counts as neutral if a jump begun this very
+ * frame could still lift the feet over whatever is bearing down before it
+ * arrives; anything closer is the hole you are already in, which the comment on
+ * the test above explicitly declines to assert about.
+ *
+ * The coverage this gives up — two obstacles spawned so close that landing from
+ * the first puts you inside the second's last moment — is covered statically
+ * instead, by "the spawn table always leaves time to land and jump again".
+ */
+function nothingPastTheLastMoment(s: PfandState): boolean {
+  const P = TUNING.pfand;
+  for (const it of s.items) {
+    if (!it.active || it.kind === 'bottle') continue;
+    const leading = it.x - it.w / 2;
+    if (leading <= P.playerX + P.hitW) continue; // level with the player or behind
+    const tEnter = (leading - (P.playerX + P.hitW)) / s.speed;
+    if (tEnter < tClearOf(it.h)) return false;
+  }
+  return true;
+}
+
+/** Seconds from the start of a jump until the feet are above `h`, frame-quantised. */
+function tClearOf(h: number): number {
+  for (let f = 1; f <= 60; f++) if (jumpHeight(f * DT) > h) return f * DT;
+  return Infinity;
 }
 
 function poolsOf(s: AnyLevelState): Array<unknown[]> {

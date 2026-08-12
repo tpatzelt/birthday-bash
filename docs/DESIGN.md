@@ -62,28 +62,28 @@ Fixed timestep 1/60 s. Lives are **per level** and reset on retry.
 |---|---|
 | **Verb** | Run (auto) + tap to jump |
 | **Input** | Tap anywhere = jump. Nothing else. |
-| **Goal** | Collect **20 Flaschen = 5,00 €** |
+| **Goal** | Collect **26 Flaschen = 6,50 €** |
 | **Fail** | 3 hits |
-| **Length** | ~60–80 s |
+| **Length** | ~40–55 s |
 
 - Player runs in place at `x = 92`; world scrolls left. Ground at `y = H − 130`.
   Hitbox 34 × 46.
 - Gravity `2400 px/s²`, jump impulse `−760 px/s`. **Coyote time 100 ms, jump
   buffer 120 ms** — non-negotiable, this is what makes it feel fair on a
   touchscreen with input latency.
-- Scroll speed `v = 240 + min(160, 2.7·t)` px/s.
+- Scroll speed `v = 240 + min(200, 3.4·t)` px/s.
 - Spawn gap `rand(180, 320) · (v / 240)` px, so the ramp doesn't secretly also
   compress spacing.
-- Entity mix: 55 % Pfand cluster (1–3 bottles, on the ground or on a jump arc),
-  45 % obstacle — E-Roller (40 × 30, ground), Hundehaufen (24 × 16, ground),
+- Entity mix: 52 % Pfand cluster (1–3 bottles, on the ground or on a jump arc),
+  48 % obstacle — E-Roller (40 × 30, ground), Hundehaufen (24 × 16, ground),
   Baustellenzaun (30 × 54, must jump).
 - A hit costs a life and grants **1.2 s invulnerability**, but **never costs
   collected bottles**. Losing progress feels punitive; losing a life reads as a
   scratch.
-- HUD: a Pfandbon-style receipt strip — `€ 3,25 / 5,00` in tabular numerals.
+- HUD: a Pfandbon-style receipt strip — `€ 3,25 / 6,50` in tabular numerals.
 
 **Juice:** bottles clink and arc into the HUD counter; the E-Roller topples with
-a ding; at 5,00 € a Pfandautomat spits out the Bon.
+a ding; at 6,50 € a Pfandautomat spits out the Bon.
 
 ---
 
@@ -95,7 +95,7 @@ a ding; at 5,00 € a Pfandautomat spits out the Bon.
 |---|---|
 | **Verb** | Steer left/right, advance automatically |
 | **Input** | Drag thumb horizontally |
-| **Goal** | Reach the gate — 2600 px of queue |
+| **Goal** | Reach the gate — 3000 px of queue |
 | **Fail** | 3 rejections |
 | **Length** | ~25–40 s |
 
@@ -123,12 +123,12 @@ a ding; at 5,00 € a Pfandautomat spits out the Bon.
 |---|---|
 | **Verb** | Catch |
 | **Input** | Drag thumb horizontally |
-| **Goal** | 25 Heringe |
+| **Goal** | 28 Heringe |
 | **Fail** | 3 vegetables caught |
-| **Length** | ~45–60 s |
+| **Length** | ~25–40 s |
 
 - Player (an open Tüte) at `y = H − 120`, width 62, lerps to pointer at `16/s`.
-- Spawn interval `0.62 s → 0.34 s` over 45 s; fall speed `210 → 340 px/s`.
+- Spawn interval `0.62 s → 0.34 s` over 45 s; fall speed `225 → 370 px/s`.
 - Mix: 62 % Hering (+1), 30 % Gemüse (−1 life), 8 % Lakritz-Bonus (+3).
 - Vegetables are visually **loud and unmistakable** (broccoli, carrot, aubergine
   — round, green/orange, tumbling) versus the flat black-and-white herring. At
@@ -151,12 +151,12 @@ the kayak simulator he'll actually be near.
 |---|---|
 | **Verb** | Do almost nothing, gracefully |
 | **Input** | Drag — but gently |
-| **Goal** | 4800 px downriver (~40 s) |
+| **Goal** | 5400 px downriver (~46 s) |
 | **Fail** | **Ruhe** hits 0 |
 | **Length** | ~40–55 s |
 
 - River channel centre: `cx(y) = W/2 + 72·sin(y·0.0042) + 34·sin(y·0.0113 + 1.7)`.
-  Channel half-width `84 px`, narrowing to `62 px` over the level.
+  Channel half-width `84 px`, narrowing to `58 px` over the level.
 - Kayak at `y = H − 190`; `x` follows the pointer at a deliberately sluggish
   lerp of `6/s`. The sluggishness *is* the mechanic — it makes over-correcting
   the natural mistake.

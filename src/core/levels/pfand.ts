@@ -1,7 +1,7 @@
 /**
  * L1 — PFANDPIRAT NEUKÖLLN (DESIGN.md §4).
  *
- * Auto-runner. Tap anywhere to jump. Collect 20 bottles = 5,00 €.
+ * Auto-runner. Tap anywhere to jump. Collect `goalBottles` bottles' worth of Pfand.
  * Coyote time and jump buffer are non-negotiable: they are what makes a jump
  * feel fair on a touchscreen with input latency.
  */

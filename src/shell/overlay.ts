@@ -7,8 +7,13 @@
  */
 
 import { BUILD_LINES, DETAIL_ROWS, gift } from '../config/gift.js';
+import { TUNING } from '../config/tuning.js';
 import { LEVEL_ORDER, type LevelId } from '../core/input.js';
+import { euros } from '../core/levels/pfand.js';
 import { buildShareText, copyShareText } from './share.js';
+
+/** The Pfand goal as the Bon reads it — derived, so the copy can't drift from tuning.ts. */
+const PFAND_GOAL_EUR = euros(TUNING.pfand.goalBottles * TUNING.pfand.centsPerBottle);
 
 export const LEVEL_TITLE: Record<LevelId, string> = {
   pfand: 'PFANDPIRAT NEUKÖLLN',
@@ -25,9 +30,9 @@ export const LEVEL_SUB: Record<LevelId, string> = {
 };
 
 export const LEVEL_HOWTO: Record<LevelId, string> = {
-  pfand: 'Tippen = springen. Sammel 20 Flaschen, das sind 5,00 €.',
+  pfand: `Tippen = springen. Sammel ${TUNING.pfand.goalBottles} Flaschen, das sind ${PFAND_GOAL_EUR} €.`,
   sisyphos: 'Daumen wischen. Komm an den Türstehern vorbei bis zur Tür.',
-  katjes: 'Tüte bewegen. 25 Heringe. Gemüse fassen wir nicht an.',
+  katjes: `Tüte bewegen. ${TUNING.katjes.goalFish} Heringe. Gemüse fassen wir nicht an.`,
   kayak: 'Sanft wischen. Bleib in der Strömung. Hektik kostet Ruhe.',
 };
 
@@ -39,9 +44,9 @@ export const LEVEL_FAIL: Record<LevelId, string> = {
 };
 
 export const LEVEL_WIN: Record<LevelId, string> = {
-  pfand: '5,00 €. Der Automat spuckt den Bon aus.',
+  pfand: `${PFAND_GOAL_EUR} €. Der Automat spuckt den Bon aus.`,
   sisyphos: 'Stempel drauf. Du bist drin.',
-  katjes: '25 Heringe. Kein Gemüse. Sauber.',
+  katjes: `${TUNING.katjes.goalFish} Heringe. Kein Gemüse. Sauber.`,
   kayak: 'Ruhig geblieben.',
 };
 
