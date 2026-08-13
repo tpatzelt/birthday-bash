@@ -165,8 +165,24 @@ skip button state, and **the reveal** (the one screen that absolutely must not
 regress unnoticed). Compared at a 0.2 % pixel threshold to tolerate font
 rasterisation differences.
 
-Baselines are generated in the CI container image so local/CI font differences
-don't cause permanent false failures.
+```bash
+npm run visual          # check against the committed baselines
+npm run visual:update   # regenerate after an intentional visual change
+```
+
+Both run through `scripts/visual.sh`, which serves the production image as
+usual (§7) but puts the **browsers** inside `mcr.microsoft.com/playwright`
+pinned to the exact `@playwright/test` version. Font rasterisation is the thing
+that makes screenshot tests rot, so the browser has to be identical everywhere:
+the committed PNGs are that container's output, which is why the same baselines
+hold on a workstation and on a CI runner. Baselines generated on the host would
+be valid on exactly one machine — hence the `VISUAL=1` gate, so a plain
+`npm run e2e` can't fail on them.
+
+The busy-frame screenshots are taken with no input at all, so a level nobody is
+playing eventually loses: `BUSY_FRAMES` in the spec holds a per-level step count
+that stays below each level's idle-death frame, and the test asserts the phase is
+still `play` so a baseline can't silently become a photo of a fail card.
 
 ## 9. Budgets — CI-enforced
 
@@ -213,7 +229,7 @@ phone. Before the freeze:
 
 | Workflow | Trigger | Does |
 |---|---|---|
-| `ci.yml` | PR, push | typecheck → lint → unit/determinism/bot/fuzz → build image → e2e → visual → budgets |
+| `ci.yml` | PR, push | typecheck → lint → unit/determinism/bot/fuzz → build image → e2e → visual (§8, own job) → budgets |
 | `build-and-publish.yml` | push to `main` | builds and pushes `ghcr.io/tpatzelt/birthday-bash:latest` + `:sha-<short>` (mirrors the annabel-rene pipeline) |
 | `smoke.yml` | after publish, + `workflow_dispatch` | §10 against the live URL |
 

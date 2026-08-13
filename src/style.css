@@ -110,6 +110,13 @@ h1 {
   text-transform: uppercase;
   color: var(--chalk);
   margin: 0 0 14px;
+  /* German compounds outrun the column: "DANEBENGETRETEN" is wider than a
+     390px phone even at the clamp's 34px floor, and the default
+     `overflow-wrap: normal` lets it run off the right edge instead of
+     wrapping. `hyphens` (with <html lang="de">) breaks it at a real syllable
+     boundary; `break-word` is the backstop for anything it can't hyphenate. */
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 h2 {

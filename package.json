@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "balance": "tsx scripts/balance.ts",
     "e2e": "npm run build && playwright test",
-    "e2e:visual": "npm run build && VISUAL=1 playwright test tests/e2e/visual.spec.ts --update-snapshots",
+    "visual": "bash scripts/visual.sh",
+    "visual:update": "bash scripts/visual.sh --update-snapshots",
     "preview:docker": "bash scripts/preview-docker.sh",
     "smoke:live": "tsx scripts/smoke-live.ts"
   },
