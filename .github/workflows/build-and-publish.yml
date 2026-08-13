@@ -46,9 +46,9 @@ jobs:
         id: sha
         run: echo "short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
-      # The published tag is intentionally rolling (`latest`), consistent with
-      # the other personal images; every build also gets an immutable
-      # `sha-<short>` so a rollback is one env edit (DEPLOY.md §6).
+      # The published tag is intentionally rolling (`latest`); every build also
+      # gets an immutable `sha-<short>` so a rollback is a tag change on
+      # whatever runs the image (DEPLOY.md §3).
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -65,4 +65,4 @@ jobs:
         run: |
           echo "rollback tag: sha-${{ steps.sha.outputs.short }}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "on the homelab: set BIRTHDAY_BASH_IMAGE_TAG and \`docker compose up -d\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "to roll back, run that tag instead of \`latest\` (DEPLOY.md §3)" >> "$GITHUB_STEP_SUMMARY"

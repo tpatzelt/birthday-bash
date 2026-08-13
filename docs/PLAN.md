@@ -10,12 +10,12 @@ so it isn't made at midnight on Friday.
 
 ## Scheduling principle
 
-**Infrastructure first, content last.** The tunnel route, the Caddy handle
-block, the GHCR pipeline, and the first successful pull all happen on day one
-against a placeholder page. Those are the tasks that fail in unfamiliar ways and
-they must not be discovered on Friday. Once a placeholder is live at the real
-URL, every later milestone is "push and it's on his phone" — and if everything
-after M1 goes wrong, there is still a working, deployed, completable game.
+**Infrastructure first, content last.** The GHCR pipeline, the hosting, the
+public URL, and the first successful pull all happen on day one against a
+placeholder page. Those are the tasks that fail in unfamiliar ways and they must
+not be discovered on Friday. Once a placeholder is live at the real URL, every
+later milestone is "push and it's on his phone" — and if everything after M1
+goes wrong, there is still a working, deployed, completable game.
 
 ## M0 — Skeleton, pipeline, and a live URL (Tue 11.08)
 
@@ -28,11 +28,9 @@ The only milestone with no gameplay in it.
 - [ ] Canvas sizing, DPR, safe-area, portrait lock, orientation hint
 - [ ] Dockerfile (nginx) + `npm run preview:docker`
 - [ ] `ci.yml` and `build-and-publish.yml` green, image in GHCR
-- [ ] **Homelab: compose stack, env example + symlink, Caddy handle block
-      (force-recreate + diff!), cloudflared ingress, `tunnel route dns`, README
-      row, `check.sh` PASS**
+- [ ] **Hosting: the published image running behind the real hostname, TLS and
+      public DNS working** — outside this repo (DEPLOY.md)
 - [ ] Placeholder page live at the real URL, verified **on mobile data**
-- [ ] `npm run smoke:live` passes
 
 **Exit:** a URL that opens on a phone. No game yet.
 
@@ -68,7 +66,7 @@ TESTING.md is running and every later level reuses it.
 - [ ] L4: channel, sluggish steering, Ruhe meter, rocks, filter-opens-with-calm
 - [ ] Whale breach → white flash
 - [ ] Reveal sequence: headset frame, type-on lines, **the drop**, confetti
-- [ ] `config/gift.ts` wired, base64-encoded (DEPLOY.md §7)
+- [ ] `config/gift.ts` wired, base64-encoded (DEPLOY.md §4)
 - [ ] Mercy rules complete: skip after 2 fails, silent auto-ease after 4
 - [ ] `?skip=1`
 - [ ] E2E: full four-level playthrough to the reveal + visual baseline of the
@@ -98,8 +96,8 @@ Saturday-afternoon "quick fixes" are how the gift breaks.
 
 ## Saturday morning
 
-- [ ] `npm run smoke:live` once more
-- [ ] Open the real URL on your own phone, cold, from mobile data
+- [ ] Open the real URL on your own phone, cold, from mobile data — and check
+      `window.__bb.version` is the SHA you expect (TESTING.md §10)
 - [ ] Confirm the details in `gift.ts` are correct
 
 ## 4. Cut list — decided now, in this order
@@ -122,11 +120,11 @@ the present beats a four-level game that might not.
 |---|---|---|---|
 | R1 | iOS blocks `AudioContext` until a gesture; a silent game reads as broken | High | Audio unlocks on the title button; game designed to be fully playable muted (DESIGN.md §6); E2E has a muted-playthrough case |
 | R2 | Emoji sprites render differently or ambiguously on his phone | High | Small glyph set, pre-rendered atlas, real-device check at M2, hand-drawn fallbacks; characters are vector from the start |
-| R3 | Tunnel/DNS work eats an evening | Medium | Done first, at M0, against a placeholder |
+| R3 | Hosting/DNS work eats an evening | Medium | Done first, at M0, against a placeholder; kept out of this repo so it can't block the game |
 | R4 | Frame drops on a mid-range Android | Medium | Pooled entities, zero-allocation draw path, CI perf budget at 4× throttle |
 | R5 | He can't finish a level and the mood dies | Medium | Mercy rules (DESIGN.md §8) + `tipsy` bot gate in CI + `?skip=1` |
-| R6 | Spoiled early by a public repo, the URL, or view-source | Medium | DEPLOY.md §7 |
-| R7 | Homelab or internet down at party time | Low | Rollback tag ready, and the reveal screenshot on your phone |
+| R6 | Spoiled early by a public repo, the URL, or view-source | Medium | DEPLOY.md §4 |
+| R7 | The host or the internet is down at party time | Low | Rollback tag ready, and the reveal screenshot on your phone |
 | R8 | Scope creep — a fifth level, a leaderboard, a story mode | **High** | The cut list above, and the freeze |
 
 ## 6. Definition of done
@@ -135,7 +133,8 @@ the present beats a four-level game that might not.
 - [ ] `casual` bot wins ≥ 55 % per level and `tipsy` clears the *eased* level
       ≥ 60 % of the time, in CI
 - [ ] The reveal is reachable even failing every level, and via `?skip=1`
-- [ ] Full playthrough E2E green against the **shipped image** and the **live URL**
+- [ ] Full playthrough E2E green against the **shipped image**, and the real URL
+      opened by hand on a phone
 - [ ] Loads in under 2 s on 4G, works offline afterwards
 - [ ] Played start to finish on a real iPhone and a real Android
 - [ ] Played by someone who'd never seen it, with no instructions

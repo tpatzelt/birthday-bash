@@ -1,9 +1,9 @@
 /**
  * E2E against the production Docker image (TESTING.md §7).
  *
- * Not `vite dev`, not `vite preview` — the container that goes to the homelab.
- * A test that passes against a dev server proves nothing about the artifact
- * that ships.
+ * Not `vite dev`, not `vite preview` — the exact container that ships. A test
+ * that passes against a dev server proves nothing about the artifact that
+ * ships.
  */
 
 import { expect, test, type Page } from '@playwright/test';

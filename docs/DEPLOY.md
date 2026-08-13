@@ -1,34 +1,25 @@
-# Deployment — self-hosted on the homelab
+# Deployment — the artifact this repo produces
 
-Target: the existing single-host Docker setup in `~/coding/homelab` — Caddy in
-front, Cloudflare Tunnel as the only public ingress, no forwarded router ports.
-
-The `annabel-rene` wedding site is the precedent this follows exactly: an app
-repo builds a GHCR image in its own pipeline, and the homelab repo carries only
-a small compose stack that pulls it. **Nothing about this game is novel
-infrastructure**, which is the point — the risky part of the schedule should be
-the game, not the hosting.
+This repo's deliverable is **one static container image** in GHCR. Where that
+image runs is deliberately out of scope here: it needs no volume, no env, no
+network peers and no runtime configuration, so anything that can run a
+container can serve it. Keeping the hosting out of this repo is what makes the
+image the only contract — CI can therefore test everything this repo is
+responsible for, without a deploy target existing.
 
 ```
 GitHub push (main)
-   └─ build-and-publish.yml ─► ghcr.io/tpatzelt/birthday-bash:latest + :sha-<short>
-                                         │
-                          docker compose pull && up -d   (on the homelab host)
-                                         │
-                     birthday-bash (nginx, :80) on caddy_network
-                                         │
-                     Caddy  *.{$DOMAIN} ──► reverse_proxy birthday-bash:80
-                                         │
-                     cloudflared ──► https://caddy:443  ──► the internet
-                                         │
-                              https://jonas.example.com
+   └─ ci.yml (must be green)
+        └─ build-and-publish.yml
+             └─ ghcr.io/tpatzelt/birthday-bash:latest + :sha-<short>
+                          │
+                    docker run -p 80 …  ──► https://jonas.example.com
 ```
 
-`example.com` stands in for the real domain throughout, matching the homelab
-repo's convention. **Never write the real domain, LAN IPs, or the tunnel UUID
-into a tracked file in either repo.**
+`example.com` stands in for the real domain throughout. **Never write the real
+domain, LAN IPs, or any hosting detail into a tracked file** — see §4.
 
-## 1. The image (this repo)
+## 1. The image
 
 Static output served by nginx. Multi-stage, small, no runtime environment.
 
@@ -40,17 +31,21 @@ FROM nginx:1.27-alpine            # dist -> /usr/share/nginx/html + nginx.conf
 Notes that matter:
 
 - **Pin the base images** to Renovate-parsable tags (`1.27-alpine`, not
-  `alpine`). Per the homelab CLAUDE.md, a tag Renovate can't order is a tag that
-  silently rots for years.
-- The published `ghcr.io/tpatzelt/*` tag itself is intentionally rolling
-  (`latest`), consistent with the other personal images. Add
-  `ghcr.io/tpatzelt/birthday-bash` to the homelab `renovate.json5` ignore list
-  so it doesn't generate noise PRs.
+  `alpine`). A tag Renovate can't order is a tag that silently rots for years.
 - nginx config: long `immutable` cache on hashed assets, **`no-cache` on
   `index.html` and `sw.js`** — otherwise a fix pushed on the morning of the
   party never reaches a phone that already loaded the site.
+- Security headers and `X-Robots-Tag: noindex` are set by `nginx.conf`, in the
+  image, so they hold wherever it runs rather than depending on a proxy in
+  front of it.
 - `HEALTHCHECK` hitting `/` so `docker ps` shows real health.
 - No volume, no writable state, no env at runtime — it's a bag of files.
+- `GIT_SHA` is the one build argument. It lands in `window.__bb.version`, which
+  is how you tell which build a phone is actually running.
+
+All of the above is asserted in CI against the built image — the response
+headers and cache policy by `tests/e2e/artifact.spec.ts`, the game itself by
+the full-playthrough E2E (TESTING.md §7, §10).
 
 Verify locally with the exact artifact:
 
@@ -58,145 +53,26 @@ Verify locally with the exact artifact:
 npm run preview:docker   # build image, run on :8080
 ```
 
-## 2. The compose stack (homelab repo)
+## 2. Publishing
 
-`compose/birthday-bash/compose.yaml`:
+`build-and-publish.yml`, on push to `main`, after `ci.yml` is green:
 
-```yaml
-services:
-  birthday-bash:
-    image: ghcr.io/tpatzelt/birthday-bash:${BIRTHDAY_BASH_IMAGE_TAG}
-    container_name: birthday-bash
-    restart: unless-stopped
-    networks:
-      - caddy_network
+- `ghcr.io/tpatzelt/birthday-bash:latest` — rolling, what a host normally runs.
+- `ghcr.io/tpatzelt/birthday-bash:sha-<short>` — immutable, one per build.
 
-networks:
-  caddy_network:
-    external: true
-    name: caddy_network
-```
+The job summary prints the `sha-` tag of every build. That is the number to
+write down.
 
-- Service and container name `birthday-bash` — lowercase-hyphen, and it must
-  match the Caddy upstream or `check.sh`'s `check_caddy_upstreams` fails.
-- Uses **compose interpolation from the auto-loaded `./.env`** rather than
-  `env_file:`, the same choice `annabel-rene` makes: only the referenced var is
-  involved and nothing leaks into the container.
-- The tag is a variable so a **rollback is an env edit, not a compose edit**
-  (§6).
-- No `volumes:` — deliberately stateless. This is also why **autorestic needs no
-  change**: there is nothing under `/opt/dockerdata` to snapshot. Worth stating
-  explicitly so a future reader doesn't assume it was forgotten.
+## 3. Rollback
 
-Also required by the repo's conventions and enforced by `check.sh`:
+Run the previous `sha-<short>` tag instead of `latest`. Every CI build
+published one, so any earlier build is a tag change and a restart away — no
+rebuild, no revert commit, nothing to do in this repo at all.
 
-- `secrets/.birthday-bash.env.example` containing
-  `BIRTHDAY_BASH_IMAGE_TAG=latest` (`check_env_completeness` fails if a
-  `${VAR}` has no entry; `check_env_examples_exist` fails if the example is
-  missing entirely).
-- `secrets/.birthday-bash.env` — the real file, gitignored.
-- The symlink: `compose/birthday-bash/.env -> ../../secrets/.birthday-bash.env`
-- A row in the README service table (`check_readme_table` greps for
-  `| **birthday-bash**`).
+Know the last-known-good SHA **before** the party and write it down somewhere
+that isn't a terminal.
 
-## 3. Caddy route
-
-In `compose/caddy/Caddyfile`, inside the **public** `*.{$DOMAIN}` block:
-
-```
-handle @jonas {
-    reverse_proxy birthday-bash:80
-}
-```
-
-> **The trap, straight from the homelab CLAUDE.md:** the Caddyfile is a
-> *single-file bind mount*. Any editor that writes atomically (all of them,
-> including this one) replaces the inode, and the container keeps serving the
-> old file. `caddy reload` will exit 0, log `adapted config to JSON`, and read
-> the stale config — a completely silent failure that shows up only as the
-> catch-all `abort` closing connections on the route you just added.
-
-So:
-
-```bash
-docker compose -f compose/caddy/compose.yaml up -d --force-recreate caddy
-diff <(docker exec caddy cat /etc/caddy/Caddyfile) compose/caddy/Caddyfile
-```
-
-The `diff` must be empty. Do not skip it.
-
-## 4. Public DNS + tunnel
-
-A `handle` block alone does **nothing** — `*.{$DOMAIN}` has no wildcard DNS
-record; only explicitly routed public hostnames exist. Three steps, all required:
-
-1. Add an ingress rule for `jonas.<domain>` in
-   `/opt/dockerdata/cloudflared/config.yml` (outside the repo — it carries the
-   tunnel UUID and real hostnames), pointing at `https://caddy:443` like every
-   other public host, so tunnelled traffic still passes CrowdSec, the security
-   headers, and the access log.
-2. Mirror the rule into the tracked template `compose/cloudflared/config.yml.example`.
-3. `cloudflared tunnel route dns homelab jonas`
-
-Then restart cloudflared and confirm the hostname resolves **from outside the
-LAN** — mobile data, not wifi. A `*.dev.` habit will silently give a false pass
-here.
-
-Free-plan constraints are irrelevant at this size (no video streaming, request
-bodies far under 100 MB).
-
-## 5. Deploy order
-
-One command from this repo, once the commit is pushed and CI has published:
-
-```bash
-npm run deploy -- https://jonas.example.com
-```
-
-It pulls, recreates, waits for the container to report *healthy*, then runs
-`smoke:live` pinned to the current HEAD SHA — so a deploy that silently kept the
-old image fails immediately instead of at the party. It refuses to run on a
-dirty or unpushed tree, because CI would not have built that SHA.
-
-Deployment is manual on purpose: the homelab forwards no router ports, so
-nothing in GitHub Actions can reach it. That is also why `smoke.yml` is
-dispatch-only — wired to fire after a publish, it would smoke whatever was live
-*before* the deploy. CI covers the artifact instead, running the same smoke
-script against the locally-served image (§6).
-
-If the Caddyfile changed, force-recreate and diff it (§3), and on the homelab
-side:
-
-```bash
-cd ~/coding/homelab && ./scripts/check.sh    # must print RESULT: PASS
-```
-
-`check.sh` is the gate there: compose config, env-template completeness,
-`caddy validate`, upstream-vs-compose consistency, README coverage, yamllint,
-shellcheck. It is only needed when a tracked homelab file changed — a plain
-image bump changes nothing in that repo.
-
-**Do §1–§5 on day one, against a placeholder page**, before the game exists.
-Tunnel DNS, a new Caddy route, and a first GHCR pull are exactly the kind of
-work that eats an evening, and it must not be sitting on the critical path on
-Friday night. See PLAN.md M0.
-
-## 6. Rollback
-
-```bash
-# secrets/.birthday-bash.env
-BIRTHDAY_BASH_IMAGE_TAG=sha-abc1234
-```
-
-```bash
-docker compose -f compose/birthday-bash/compose.yaml up -d
-```
-
-Every CI build publishes an immutable `sha-<short>` tag, so any previous build
-is one env edit away. Know the last-known-good SHA **before** the party and
-write it down somewhere that isn't a terminal.
-
-## 7. Spoiler containment
+## 4. Spoiler containment
 
 The reveal text ships inside the JS bundle. Anyone with the URL can read it with
 view-source. Therefore:
@@ -206,17 +82,18 @@ view-source. Therefore:
   away.
 - Don't put the reveal in commit messages that could show in a public feed, or
   in the GHCR package description.
-- Deploy behind a placeholder page first; swap in the real game close to the day.
+- Serve a placeholder first; swap in the real game close to the day.
 - Store the reveal strings **base64-encoded in `gift.ts`**, decoded at render
   time. This is not security and isn't pretending to be — it defeats a curious
   "view source" on a phone, which is the only realistic threat.
 - Send the link when it's time, not before.
 
-## 8. Party-day operations
+## 5. Party-day operations
 
 - `?skip=1` jumps straight to the reveal if anything is broken (DESIGN.md §8).
   Know this URL by heart.
-- Have the last-known-good `sha-` tag written down (§6).
-- Re-run `npm run smoke:live` the morning of.
+- Have the last-known-good `sha-` tag written down (§3).
+- Open the real URL on your own phone, cold, from mobile data — not wifi. A
+  LAN-only habit gives a false pass.
 - Have the reveal as a **screenshot on your phone** as the true fallback. If the
-  homelab is down at 21:00 on a Saturday, the gift still gets given.
+  hosting is down at 21:00 on a Saturday, the gift still gets given.

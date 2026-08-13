@@ -11,15 +11,15 @@ beer. Every design decision below follows from that sentence.
 > **Spoiler containment.** The reveal text lives in this repo and in the shipped
 > JS bundle. Keep the repo and the GHCR package **private until after the
 > party**, and don't send the URL before it's time. See
-> [docs/DEPLOY.md](docs/DEPLOY.md#spoiler-containment).
+> [docs/DEPLOY.md](docs/DEPLOY.md#4-spoiler-containment).
 
 ## Status
 
 **Playable, tested, and buildable.** All four levels, the mercy rules, the
 reveal, the audio, the offline shell and the deployment image are in. What is
-left is on real hardware and on the homelab, not in the code:
+left is on real hardware and on whatever hosts the image, not in the code:
 
-- [ ] Homelab: compose stack, Caddy handle block, cloudflared ingress + `tunnel route dns`
+- [ ] The published image running at the real URL, opened from mobile data
 - [ ] Played end to end on a real iPhone and a real Android (TESTING.md §11)
 - [ ] Emoji glyph check on both — the atlas falls back to hand-drawn vectors for
       anything the font can't render, but which glyphs *read* is a human call
@@ -41,8 +41,8 @@ Current numbers per level: [reports/balance.md](reports/balance.md).
 |---|---|
 | [docs/DESIGN.md](docs/DESIGN.md) | The game: levels, mechanics, tuning constants, art direction, audio, German copy |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Deterministic core / renderer split, module layout, performance budget |
-| [docs/TESTING.md](docs/TESTING.md) | The dev↔app closed loop: input tapes, bot players, balance reports, E2E on the shipped image, live smoke |
-| [docs/DEPLOY.md](docs/DEPLOY.md) | GHCR image → homelab compose stack → Caddy → Cloudflare Tunnel |
+| [docs/TESTING.md](docs/TESTING.md) | The dev↔app closed loop: input tapes, bot players, balance reports, E2E on the shipped image |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | The artifact: the nginx image, GHCR tags, rollback, spoiler containment |
 | [docs/PLAN.md](docs/PLAN.md) | Day-by-day milestones, cut list, risk register, definition of done |
 | [CLAUDE.md](CLAUDE.md) | Conventions for working in this repo |
 
@@ -52,10 +52,11 @@ Current numbers per level: [reports/balance.md](reports/balance.md).
   framework, so the game logic can run headless and deterministically in tests.
 - **Backend** — none. Progress lives in `localStorage`. Nothing to back up,
   nothing to fall over on the night.
-- **Hosting** — self-hosted: a static image on the existing homelab Docker host,
-  behind Caddy, published through the existing Cloudflare Tunnel.
+- **Hosting** — out of scope for this repo. It ships one self-contained static
+  nginx image to GHCR; where that runs is the host's business, which is what
+  lets CI test everything this repo owns.
 - **Language** — game copy is German (du-form, Berlin slang). Repo docs and code
-  are English, matching the homelab repo.
+  are English.
 
 ## Commands
 
@@ -64,13 +65,15 @@ npm run dev            # Vite dev server + debug harness at /__dev
 npm test               # unit + determinism + bot-beatability + fuzz (headless, ~60 s)
 npm run balance        # bot win-rate/duration report -> reports/balance.md
 npm run e2e            # Playwright against the production Docker image
+npm run visual         # screenshot baselines, in the pinned browser container
 npm run preview:docker # build and run the real shipped image on :8080
-npm run smoke:live -- https://jonas.example.com   # after deploy, and on the morning
 ```
 
 `npm run e2e` drives the real Docker image on a phone viewport, in Chromium and
-WebKit. WebKit needs system libraries (`sudo npx playwright install-deps
-webkit`); without them run `E2E_SKIP_WEBKIT=1 npm run e2e` — CI runs both.
+WebKit: gameplay, the performance and bundle budgets, and the served artifact's
+headers and caching. WebKit needs system libraries (`sudo npx playwright
+install-deps webkit`); without them run `E2E_SKIP_WEBKIT=1 npm run e2e` — CI
+runs both, and runs everything above on every push.
 
 ## The layout
 

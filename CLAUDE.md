@@ -6,7 +6,7 @@ Guidance for Claude Code when working in this repository.
 
 A four-level browser game for a phone, given as a birthday present; finishing it
 reveals a visit to Sandbox VR Berlin. Static TypeScript + Vite + Canvas 2D, no
-backend, self-hosted on the owner's homelab behind Caddy and a Cloudflare Tunnel.
+backend. It ships as one self-contained static nginx image to GHCR.
 
 Read [docs/PLAN.md](docs/PLAN.md) first — it carries the deadline, the milestone
 you are probably in, and the cut list. **The deadline is real and immovable**
@@ -36,9 +36,9 @@ seeded PRNG or `state.frame` through instead.
   audio/particles read them.
 - No per-frame allocation in the draw path — entities are pooled.
 - This repo is **private until after 15.08.2026** and the reveal must not leak
-  into commit messages or the GHCR package description (DEPLOY.md §7).
-- Domains, LAN IPs, and the tunnel UUID never appear in tracked files;
-  `example.com` is the stand-in, matching the homelab repo.
+  into commit messages or the GHCR package description (DEPLOY.md §4).
+- Real domains, hostnames, and IPs never appear in tracked files; `example.com`
+  is the stand-in.
 
 ## Commands
 
@@ -47,8 +47,8 @@ npm run dev            # Vite dev server; debug harness at /__dev
 npm test               # unit + determinism + bot beatability + fuzz (fast)
 npm run balance        # regenerate reports/balance.md
 npm run e2e            # Playwright against the production Docker image
+npm run visual         # screenshot baselines, in the pinned browser container
 npm run preview:docker # build and run the shipped image on :8080
-npm run smoke:live -- https://jonas.example.com
 ```
 
 ## The development loop
@@ -63,11 +63,11 @@ Regenerate and commit it alongside the change.
 ## Deployment
 
 `main` → GitHub Actions → `ghcr.io/tpatzelt/birthday-bash:latest` +
-`:sha-<short>` → the `birthday-bash` compose stack in `~/coding/homelab`.
+`:sha-<short>`. That image is where this repo's responsibility ends.
 
-The homelab repo has its own strict conventions and a `./scripts/check.sh` gate
-that must print `RESULT: PASS`. Two traps documented there apply here:
-editing the Caddyfile requires `--force-recreate` on the caddy container (bind
-mounts resolve to inodes, and `caddy reload` fails *silently* on an atomic
-write), and a Caddy `handle` block does nothing without a cloudflared ingress
-rule plus `cloudflared tunnel route dns`. See [docs/DEPLOY.md](docs/DEPLOY.md).
+**Hosting is deliberately out of scope here.** Nothing in this repo — no
+script, no workflow, no doc — should know how or where the image is served, or
+carry a real hostname. That boundary is what lets `ci.yml` run *every* test
+against the image itself, with no deploy target and no live URL involved. If a
+change seems to need one, it belongs on the host side instead. See
+[docs/DEPLOY.md](docs/DEPLOY.md).

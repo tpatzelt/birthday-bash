@@ -2,11 +2,11 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * E2E runs against the **production Docker image**, not `vite dev` and not
- * `vite preview` — the container that goes to the homelab, with the same nginx
- * config, headers, asset hashing and service worker (TESTING.md §7).
+ * `vite preview` — the exact container that ships, with the same nginx config,
+ * headers, asset hashing and service worker (TESTING.md §7).
  *
- * `E2E_BASE_URL` overrides the target, which is how `smoke:live` reuses the
- * same specs against the deployed tunnel URL.
+ * `E2E_BASE_URL` points the same specs at an already-running instance instead,
+ * skipping the build-and-serve step.
  */
 
 const PORT = Number(process.env.E2E_PORT ?? 8123);

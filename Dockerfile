@@ -1,6 +1,6 @@
 # Static output served by nginx. Multi-stage, small, no runtime environment.
 # Base images are pinned to Renovate-parsable tags: a tag Renovate can't order
-# is a tag that silently rots for years (homelab CLAUDE.md).
+# is a tag that silently rots for years.
 
 FROM node:22-alpine AS build
 WORKDIR /app

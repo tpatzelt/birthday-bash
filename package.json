@@ -15,9 +15,7 @@
     "e2e": "npm run build && playwright test",
     "visual": "bash scripts/visual.sh",
     "visual:update": "bash scripts/visual.sh --update-snapshots",
-    "preview:docker": "bash scripts/preview-docker.sh",
-    "smoke:live": "tsx scripts/smoke-live.ts",
-    "deploy": "bash scripts/deploy.sh"
+    "preview:docker": "bash scripts/preview-docker.sh"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",

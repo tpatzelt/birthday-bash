@@ -40,7 +40,7 @@ jobs:
       - run: npm run lint
 
   e2e:
-    name: e2e against the shipped image
+    name: e2e + artifact against the shipped image
     runs-on: ubuntu-latest
     needs: [beatability, static]
     steps:
@@ -53,32 +53,12 @@ jobs:
       - run: npx playwright install --with-deps chromium webkit
       - name: build (for the bundle-size budget)
         run: npm run build
+      # Gameplay, budgets, and the served artifact itself — headers, caching,
+      # asset resolution, the service worker — all against the shipped image.
       - name: playwright
         run: npm run e2e
         env:
           CI: '1'
-
-      # The same script smoke:live runs against the deployed site, pointed at
-      # the image instead. Everything it asserts about the *artifact* — cache
-      # headers, noindex, security headers, asset immutability, the service
-      # worker — is nginx.conf behaviour baked into the container, so it can be
-      # checked here rather than only after a deploy. None of it was covered:
-      # the e2e specs assert no response headers at all, and smoke.yml was
-      # skipping itself green.
-      #
-      # The expected-SHA argument is deliberately omitted. That one assertion
-      # is about *deployment* — whether the homelab actually pulled — and is
-      # the reason smoke:live still runs for real after `npm run deploy`,
-      # along with DNS, the tunnel, Caddy's routing and TLS, none of which
-      # exist on this runner.
-      - name: smoke the image itself
-        run: |
-          bash scripts/serve-image.sh 8123 &
-          for _ in $(seq 60); do
-            curl -fsS http://127.0.0.1:8123/index.html >/dev/null 2>&1 && break
-            sleep 1
-          done
-          npm run smoke:live -- http://127.0.0.1:8123
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

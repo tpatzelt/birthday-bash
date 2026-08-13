@@ -5,7 +5,7 @@ hasn't been proven playable and completable by something automated**, and that
 when a tuning change makes the game worse, a machine says so before a human has
 to notice.
 
-Four loops, from tightest to widest:
+Three loops, from tightest to widest:
 
 ```
   ┌─ play in /__dev ──► Record ──► tape.json ──► unit/replay test ─┐
@@ -18,16 +18,14 @@ Four loops, from tightest to widest:
 
   ┌─ npm run e2e ──────────────────────────────────────────────────┐  ~2 min
   │  Playwright drives the REAL Docker image on a phone viewport    │
-  └────────────────────────────────────────────────────────────────┘
-
-  ┌─ npm run smoke:live ───────────────────────────────────────────┐  ~1 min
-  │  same bot playthrough against the deployed tunnel URL           │
+  │  gameplay · budgets · the served artifact's headers and caching │
   └────────────────────────────────────────────────────────────────┘
 ```
 
 The outermost loop is the one that actually closes dev↔app: the identical bot
-playthrough runs against the local core, against the shipped image, and against
-the live public URL. If all three agree, the thing on his phone works.
+playthrough runs against the local core and against the shipped image. If both
+agree, the thing on his phone works — the image is the artifact, so there is
+nothing left between a green E2E run and a phone but the `docker run`.
 
 ---
 
@@ -128,9 +126,9 @@ to a playable game.
 npm run e2e            # builds the image, runs it, tests it, tears it down
 ```
 
-Not `vite dev`. Not `vite preview`. The container that goes to the homelab —
-same nginx config, same headers, same asset hashing, same service worker. A test
-that passes against a dev server proves nothing about the artifact that ships.
+Not `vite dev`. Not `vite preview`. The exact container that ships — same nginx
+config, same headers, same asset hashing, same service worker. A test that
+passes against a dev server proves nothing about the artifact that ships.
 
 Devices: `iPhone 14` (WebKit) and `Pixel 7` (Chromium), portrait, touch enabled.
 
@@ -193,39 +191,30 @@ still `play` so a baseline can't silently become a photo of a fail card.
 - A memory check: heap after 3 full playthroughs is within 1.5× of heap after
   one — catches pool leaks.
 
-## 10. Smoke — the artifact in CI, the deployment by hand
+## 10. The served artifact — `tests/e2e/artifact.spec.ts`
 
-`scripts/smoke-live.ts` takes any URL, so it runs in both places:
+The gameplay specs drive the app and assert nothing about responses, so the
+served-artifact behaviour gets its own spec, run by the same `npm run e2e`
+against the same image:
 
-- `200 OK`, correct content-type and cache headers, security headers present.
-- Asset hashes in the served HTML actually resolve (catches a half-pushed image).
-- The **same full-playthrough tape from §7.2** on a mobile viewport, asserting
-  the reveal renders.
-- With an expected SHA, `window.__bb.version` must match — proves you are
-  looking at the build you think you are, not a cached old one.
+- `200 OK`, correct content-type, and **`no-cache` on `index.html` and
+  `sw.js`** — the header that decides whether a fix pushed on the morning of
+  the party reaches a phone that already loaded the site.
+- Security headers and `X-Robots-Tag: noindex` present.
+- Asset hashes in the served HTML actually resolve, and `/assets/` is
+  `immutable` — catches a half-built image serving one build's HTML with
+  another's assets.
+- Unknown paths fall back to `index.html`, so `/__dev` is a route and not a 404.
 
-**In CI, against the image** (`ci.yml`, the `e2e` job). Everything above except
-the SHA check is `nginx.conf` behaviour baked into the container, so it does not
-need a deploy to verify. The e2e specs assert no response headers themselves —
-this step is the only thing covering them.
+All of it is `nginx.conf` behaviour baked into the container (DEPLOY.md §1),
+which is exactly why it belongs here: the image is the deliverable, so nothing
+about it needs a running deployment to verify.
 
-**After a deploy, against the live URL**, bundled into the deploy so the two
-cannot drift apart:
-
-```bash
-npm run deploy -- https://jonas.example.com
-```
-
-Only the second form can test DNS, the Cloudflare tunnel, Caddy's routing and
-TLS, and whether the homelab actually pulled the new image. `smoke.yml` is
-`workflow_dispatch`-only for that reason: deployment is manual (no router ports
-are forwarded), so a publish-triggered run would smoke the *previous* build.
-Re-runnable by hand at any time — **run it once more on the morning of the
-party**, with the `SMOKE_URL` repository secret set. It now fails loudly when
-that secret is missing rather than skipping itself green.
-
-Wired as a GitHub Actions job after publish, and re-runnable by hand at any
-time. **Run it once more on the morning of the party.**
+What CI cannot cover is whatever serves that image — DNS, TLS, and whether the
+host actually pulled the new tag. That is deliberately not this repo's concern
+(DEPLOY.md), and it is checked by hand: **on the morning of the party, open the
+real URL on your own phone, cold, from mobile data**, and confirm
+`window.__bb.version` is the SHA you expect.
 
 ## 11. What automation cannot do — manual checklist
 
@@ -247,9 +236,12 @@ phone. Before the freeze:
 
 | Workflow | Trigger | Does |
 |---|---|---|
-| `ci.yml` | PR, push | typecheck → lint → unit/determinism/bot/fuzz → build image → e2e → visual (§8, own job) → budgets |
-| `build-and-publish.yml` | push to `main` | builds and pushes `ghcr.io/tpatzelt/birthday-bash:latest` + `:sha-<short>` (mirrors the annabel-rene pipeline) |
-| `smoke.yml` | `workflow_dispatch` only | §10 against the live URL (deployment is manual, so this cannot be publish-triggered) |
+| `ci.yml` | PR, push | every test in this document: unit/determinism/bot/fuzz (§1–§4, §6) · typecheck + lint · build the image → e2e (§7) + budgets (§9) + the served artifact (§10) · visual regression (§8) · balance report (§5) |
+| `build-and-publish.yml` | push to `main` | builds and pushes `ghcr.io/tpatzelt/birthday-bash:latest` + `:sha-<short>` |
+
+There is no live-URL job. Everything this repo can be held responsible for is
+the image, and `ci.yml` tests all of it against the image — so a green CI run is
+the whole automated story, and §11 is the rest.
 
 `ci.yml` must be green before `build-and-publish.yml` runs. The bot-beatability
 job is the required check — everything else can be argued about, but the game
