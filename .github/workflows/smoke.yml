@@ -1,9 +1,16 @@
 name: smoke
 
+# Manual only, on purpose. This used to fire automatically after
+# build-and-publish, which could never be right: the homelab forwards no router
+# ports, so nothing in Actions can deploy to it, and the pull + recreate happens
+# by hand afterwards. The old trigger therefore smoked whatever was live
+# *before* the publish — and passed, because SMOKE_URL was unset and the job
+# skipped itself green.
+#
+# Deploying and smoking are one step now: `npm run deploy -- <url>`. Use this
+# workflow to re-check the live site at any time, and on the morning of the
+# party (TESTING.md §10).
 on:
-  workflow_run:
-    workflows: [build-and-publish]
-    types: [completed]
   workflow_dispatch:
     inputs:
       url:
@@ -16,7 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     # SMOKE_URL is a repository secret: the real hostname never appears in a
     # tracked file (DEPLOY.md).
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -34,16 +40,15 @@ jobs:
         run: |
           URL="${INPUT_URL:-$SECRET_URL}"
           if [ -z "$URL" ]; then
-            echo "::warning::no SMOKE_URL secret and no url input — skipping"
-            echo "skip=1" >> "$GITHUB_OUTPUT"
-          else
-            echo "url=$URL" >> "$GITHUB_OUTPUT"
+            # Never skip-and-pass. A smoke job that reports success without
+            # having fetched anything is worse than no smoke job: it was green
+            # all through 2026-08-13 while testing nothing at all.
+            echo "::error::no SMOKE_URL secret and no url input — nothing was smoked"
+            exit 1
           fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
 
-      - name: give the homelab a moment to pull
-        if: steps.target.outputs.skip != '1'
-        run: sleep 45
-
+      # No sleep-and-hope any more: this workflow is dispatched by a human who
+      # has already deployed, so the pull has happened by definition.
       - name: smoke:live
-        if: steps.target.outputs.skip != '1'
         run: npm run smoke:live -- "${{ steps.target.outputs.url }}" "$(git rev-parse --short HEAD)"

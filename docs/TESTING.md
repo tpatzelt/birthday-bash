@@ -193,18 +193,36 @@ still `play` so a baseline can't silently become a photo of a fail card.
 - A memory check: heap after 3 full playthroughs is within 1.5× of heap after
   one — catches pool leaks.
 
-## 10. Live smoke — after deploy
+## 10. Smoke — the artifact in CI, the deployment by hand
 
-```bash
-npm run smoke:live -- https://jonas.example.com
-```
+`scripts/smoke-live.ts` takes any URL, so it runs in both places:
 
 - `200 OK`, correct content-type and cache headers, security headers present.
 - Asset hashes in the served HTML actually resolve (catches a half-pushed image).
-- The **same full-playthrough tape from §7.2** run against the live URL on a
-  mobile viewport, asserting the reveal renders.
-- `window.__bb.version` matches the git SHA that CI just deployed — proves you
-  are looking at the build you think you are, not a cached old one.
+- The **same full-playthrough tape from §7.2** on a mobile viewport, asserting
+  the reveal renders.
+- With an expected SHA, `window.__bb.version` must match — proves you are
+  looking at the build you think you are, not a cached old one.
+
+**In CI, against the image** (`ci.yml`, the `e2e` job). Everything above except
+the SHA check is `nginx.conf` behaviour baked into the container, so it does not
+need a deploy to verify. The e2e specs assert no response headers themselves —
+this step is the only thing covering them.
+
+**After a deploy, against the live URL**, bundled into the deploy so the two
+cannot drift apart:
+
+```bash
+npm run deploy -- https://jonas.example.com
+```
+
+Only the second form can test DNS, the Cloudflare tunnel, Caddy's routing and
+TLS, and whether the homelab actually pulled the new image. `smoke.yml` is
+`workflow_dispatch`-only for that reason: deployment is manual (no router ports
+are forwarded), so a publish-triggered run would smoke the *previous* build.
+Re-runnable by hand at any time — **run it once more on the morning of the
+party**, with the `SMOKE_URL` repository secret set. It now fails loudly when
+that secret is missing rather than skipping itself green.
 
 Wired as a GitHub Actions job after publish, and re-runnable by hand at any
 time. **Run it once more on the morning of the party.**
@@ -231,7 +249,7 @@ phone. Before the freeze:
 |---|---|---|
 | `ci.yml` | PR, push | typecheck → lint → unit/determinism/bot/fuzz → build image → e2e → visual (§8, own job) → budgets |
 | `build-and-publish.yml` | push to `main` | builds and pushes `ghcr.io/tpatzelt/birthday-bash:latest` + `:sha-<short>` (mirrors the annabel-rene pipeline) |
-| `smoke.yml` | after publish, + `workflow_dispatch` | §10 against the live URL |
+| `smoke.yml` | `workflow_dispatch` only | §10 against the live URL (deployment is manual, so this cannot be publish-triggered) |
 
 `ci.yml` must be green before `build-and-publish.yml` runs. The bot-beatability
 job is the required check — everything else can be argued about, but the game

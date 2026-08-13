@@ -147,21 +147,34 @@ bodies far under 100 MB).
 
 ## 5. Deploy order
 
-```bash
-cd ~/coding/homelab
-docker compose -f compose/birthday-bash/compose.yaml pull
-docker compose -f compose/birthday-bash/compose.yaml up -d
-# Caddyfile edit -> force-recreate + diff (§3)
-./scripts/check.sh          # must print RESULT: PASS
-```
-
-`check.sh` is the gate on the homelab side: compose config, env-template
-completeness, `caddy validate`, upstream-vs-compose consistency, README
-coverage, yamllint, shellcheck. Then from this repo:
+One command from this repo, once the commit is pushed and CI has published:
 
 ```bash
-npm run smoke:live -- https://jonas.example.com
+npm run deploy -- https://jonas.example.com
 ```
+
+It pulls, recreates, waits for the container to report *healthy*, then runs
+`smoke:live` pinned to the current HEAD SHA — so a deploy that silently kept the
+old image fails immediately instead of at the party. It refuses to run on a
+dirty or unpushed tree, because CI would not have built that SHA.
+
+Deployment is manual on purpose: the homelab forwards no router ports, so
+nothing in GitHub Actions can reach it. That is also why `smoke.yml` is
+dispatch-only — wired to fire after a publish, it would smoke whatever was live
+*before* the deploy. CI covers the artifact instead, running the same smoke
+script against the locally-served image (§6).
+
+If the Caddyfile changed, force-recreate and diff it (§3), and on the homelab
+side:
+
+```bash
+cd ~/coding/homelab && ./scripts/check.sh    # must print RESULT: PASS
+```
+
+`check.sh` is the gate there: compose config, env-template completeness,
+`caddy validate`, upstream-vs-compose consistency, README coverage, yamllint,
+shellcheck. It is only needed when a tracked homelab file changed — a plain
+image bump changes nothing in that repo.
 
 **Do §1–§5 on day one, against a placeholder page**, before the game exists.
 Tunnel DNS, a new Caddy route, and a first GHCR pull are exactly the kind of
