@@ -9,6 +9,7 @@
 import { TUNING, W } from '../../config/tuning.js';
 import { playerY, type KatjesState, type Falling } from '../../core/levels/katjes.js';
 import { drawGlyph } from '../atlas.js';
+import { drawFace } from '../face.js';
 import {
   CHALK,
   GOLD,
@@ -207,34 +208,38 @@ function drawBag(ctx: CanvasRenderingContext2D, s: KatjesState, py: number, fram
   ctx.ellipse(0, 0, w / 2, 8, 0, 0, Math.PI * 2);
   ctx.stroke();
 
-  // The cat-ear mark: two small triangles over a round head, the
-  // silhouette every Katjes bag carries above the wordmark.
+  // The cat-ear mark, but the head inside it is Jonas — the bag wears him.
+  // Ears go down first so they read as sticking out from behind the hair.
   ctx.fillStyle = CHALK;
   ctx.beginPath();
-  ctx.arc(0, 20, 7, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(-6, 16);
-  ctx.lineTo(-8, 8);
-  ctx.lineTo(-1, 14);
+  ctx.moveTo(-7, 20);
+  ctx.lineTo(-10, 8);
+  ctx.lineTo(-1, 17);
   ctx.closePath();
   ctx.fill();
   ctx.beginPath();
-  ctx.moveTo(6, 16);
-  ctx.lineTo(8, 8);
-  ctx.lineTo(1, 14);
+  ctx.moveTo(7, 20);
+  ctx.lineTo(10, 8);
+  ctx.lineTo(1, 17);
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = KATJES_BLUE;
-  ctx.beginPath();
-  ctx.arc(-2.5, 20.5, 1, 0, Math.PI * 2);
-  ctx.arc(2.5, 20.5, 1, 0, Math.PI * 2);
-  ctx.fill();
+
+  if (!drawFace(ctx, 0, 25, 19)) {
+    ctx.fillStyle = CHALK;
+    ctx.beginPath();
+    ctx.arc(0, 20, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = KATJES_BLUE;
+    ctx.beginPath();
+    ctx.arc(-2.5, 20.5, 1, 0, Math.PI * 2);
+    ctx.arc(2.5, 20.5, 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   ctx.fillStyle = CHALK;
   ctx.font = '800 9px ui-sans-serif, system-ui, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('KATJES', 0, 40);
+  ctx.fillText('KATJES', 0, 50);
   ctx.textAlign = 'left';
   ctx.restore();
 

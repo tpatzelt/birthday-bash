@@ -8,6 +8,7 @@
 import { TUNING, W } from '../../config/tuning.js';
 import { playerY, screenY, type SisyphosState } from '../../core/levels/sisyphos.js';
 import { drawGlyph } from '../atlas.js';
+import { drawFace } from '../face.js';
 import { CHALK, HAZE, PINK, TEAL } from '../palette.js';
 import { hash01, verticalGradient, vignette } from './shared.js';
 
@@ -225,13 +226,17 @@ function drawQueuer(ctx: CanvasRenderingContext2D, s: SisyphosState, py: number,
   ctx.beginPath();
   ctx.ellipse(s.x, py + 4, T.playerR * 0.95, T.playerR * 0.8, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = HAZE;
-  ctx.beginPath();
-  ctx.arc(s.x, py - 6, 8, 0, Math.PI * 2);
-  ctx.fill();
+  // The head is Jonas; the shades go on over it while the pickup lasts.
+  const hy = py - 9;
+  if (!drawFace(ctx, s.x, hy, 17)) {
+    ctx.fillStyle = HAZE;
+    ctx.beginPath();
+    ctx.arc(s.x, py - 6, 8, 0, Math.PI * 2);
+    ctx.fill();
+  }
   if (s.shadesLeft > 0) {
     ctx.fillStyle = '#0A0819';
-    ctx.fillRect(s.x - 7, py - 8, 14, 4);
+    ctx.fillRect(s.x - 7.5, hy - 4, 15, 4.5);
   }
   ctx.globalAlpha = 1;
 }

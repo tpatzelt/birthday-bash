@@ -1,14 +1,15 @@
 /**
  * L1 — Sonnenallee, morgens um sieben.
  *
- * The player is hand-drawn vector (it must not vary by platform); the props
- * come from the emoji atlas.
+ * The player is hand-drawn vector under Jonas's own head (both must not vary
+ * by platform); the props come from the emoji atlas.
  */
 
 import { TUNING, W } from '../../config/tuning.js';
 import { groundY, type PfandState } from '../../core/levels/pfand.js';
 import { forEachEvent } from '../../core/state.js';
 import { drawGlyph } from '../atlas.js';
+import { drawFace } from '../face.js';
 import { AMBER, CHALK, HAZE, INK, PINK } from '../palette.js';
 import { display } from '../hud.js';
 import { skyline, verticalGradient, vignette } from './shared.js';
@@ -273,15 +274,19 @@ function drawRunner(ctx: CanvasRenderingContext2D, s: PfandState, g: number, fra
   // Body
   ctx.fillStyle = CHALK;
   ctx.fillRect(cx - 7, top + 12, 14, 20);
-  // Head
-  ctx.fillStyle = CHALK;
-  ctx.beginPath();
-  ctx.arc(cx, top + 6, 7, 0, Math.PI * 2);
-  ctx.fill();
-  // Cap, because it is 7 a.m.
+  // Head: Jonas, with a slight run-cycle bob. Vector ball if he hasn't decoded.
+  const bob = s.onGround ? Math.abs(Math.sin(frame * 0.4)) * 1.2 : 0;
+  const hy = top + 5 - bob;
+  if (!drawFace(ctx, cx, hy, 19)) {
+    ctx.fillStyle = CHALK;
+    ctx.beginPath();
+    ctx.arc(cx, top + 6, 7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Cap, because it is 7 a.m. It sits *on* the hair, not above it.
   ctx.fillStyle = PINK;
-  ctx.fillRect(cx - 8, top - 1, 16, 4);
-  ctx.fillRect(cx + 2, top + 1, 9, 3);
+  ctx.fillRect(cx - 9, hy - 12, 18, 4);
+  ctx.fillRect(cx + 4, hy - 9, 10, 3);
 
   // Legs: a two-frame run cycle on the ground, a tuck in the air.
   ctx.strokeStyle = CHALK;

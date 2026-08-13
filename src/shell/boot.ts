@@ -38,6 +38,7 @@ import { create as createAfterhour, step as stepAfterhour, loopsSurvived, type A
 import { recordAfterhourRun, type AfterhourScore } from '../core/afterhourScore.js';
 
 import { buildAtlas } from '../render/atlas.js';
+import { loadFace } from '../render/face.js';
 import { prefersReducedMotion, resizeCanvas, type Viewport } from '../render/canvas.js';
 import { renderIdle, renderLevel, renderAfterhour, type RenderContext } from '../render/index.js';
 import { clearParticles, confetti, makeParticles } from '../render/particles.js';
@@ -62,6 +63,7 @@ const rotateEl = document.getElementById('rotate') as HTMLElement;
 const ctx = canvas.getContext('2d', { alpha: false }) as CanvasRenderingContext2D;
 
 buildAtlas();
+loadFace();
 
 const reducedMotion = prefersReducedMotion();
 const particles = makeParticles(reducedMotion);

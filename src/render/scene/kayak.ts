@@ -16,6 +16,7 @@ import {
 } from '../../core/levels/kayak.js';
 import { forEachEvent } from '../../core/state.js';
 import { drawGlyph } from '../atlas.js';
+import { drawFace } from '../face.js';
 import { CHALK, HAZE, PINK, TEAL } from '../palette.js';
 import { verticalGradient, vignette } from './shared.js';
 
@@ -205,11 +206,8 @@ function drawBoat(ctx: CanvasRenderingContext2D, s: KayakState, py: number, fram
   ctx.ellipse(0, 2, 6.5, 10, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Paddler + paddle, angled by how hard the thumb is dragging.
-  ctx.fillStyle = CHALK;
-  ctx.beginPath();
-  ctx.arc(0, -2, 5, 0, Math.PI * 2);
-  ctx.fill();
+  // Paddle first, angled by how hard the thumb is dragging — it passes behind
+  // the paddler rather than across his face.
   ctx.strokeStyle = HAZE;
   ctx.lineWidth = 2.5;
   ctx.save();
@@ -219,6 +217,14 @@ function drawBoat(ctx: CanvasRenderingContext2D, s: KayakState, py: number, fram
   ctx.lineTo(22, 6);
   ctx.stroke();
   ctx.restore();
+
+  // The paddler, seen from just behind: Jonas, leaning with the boat.
+  if (!drawFace(ctx, 0, -2, 15)) {
+    ctx.fillStyle = CHALK;
+    ctx.beginPath();
+    ctx.arc(0, -2, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   ctx.globalAlpha = 1;
   ctx.restore();
