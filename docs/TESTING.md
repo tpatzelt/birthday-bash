@@ -153,34 +153,30 @@ Scenarios:
 9. **Muted playthrough** — the game is completable with audio blocked, and no
    unhandled rejection is thrown when `AudioContext` is refused.
 
-## 8. Visual regression — Playwright screenshots
+## 8. Visual regression — **cut**
 
-Made possible by determinism: `setSeed(k)` → `freeze()` → `step(n)` →
-screenshot. Fixed seed and fixed frame count means pixel-stable output.
+Screenshot baselines were item 1 on the PLAN.md §4 cut list, and on 13.08 they
+were taken. This section stays as a record of why, because "add screenshot
+tests" is an obvious-looking idea that would otherwise get retried on the worst
+possible day.
 
-Baselines: title, each level at an early and a busy frame, each fail card, the
-skip button state, and **the reveal** (the one screen that absolutely must not
-regress unnoticed). Compared at a 0.2 % pixel threshold to tolerate font
-rasterisation differences.
+Determinism made the mechanism work — `setSeed(k)` → `freeze()` → `step(n)` →
+screenshot is genuinely pixel-stable in the core. The rendering on top of it is
+not. `freeze()` stops the simulation, but the reveal's type-on, the drop and the
+confetti run on wall-clock time, so a screenshot lands at a different point in
+the sequence on every run. The suite failed a *different* test each time —
+`katjes-busy` on one commit, `the reveal` on the next — always around a 2 %
+pixel diff against thresholds of 0.2 %, so it was never font rasterisation, and
+the pinned browser container did not help. Two red CI runs on the Thursday
+before the party bought no information about the game.
 
-```bash
-npm run visual          # check against the committed baselines
-npm run visual:update   # regenerate after an intentional visual change
-```
+What actually protects the reveal is §7.2: the full playthrough asserts the
+Sandbox VR text and every `gift.ts` detail is present in the DOM. That catches
+the failure that matters — the reveal not rendering — and cannot flake on a
+confetti frame.
 
-Both run through `scripts/visual.sh`, which serves the production image as
-usual (§7) but puts the **browsers** inside `mcr.microsoft.com/playwright`
-pinned to the exact `@playwright/test` version. Font rasterisation is the thing
-that makes screenshot tests rot, so the browser has to be identical everywhere:
-the committed PNGs are that container's output, which is why the same baselines
-hold on a workstation and on a CI runner. Baselines generated on the host would
-be valid on exactly one machine — hence the `VISUAL=1` gate, so a plain
-`npm run e2e` can't fail on them.
-
-The busy-frame screenshots are taken with no input at all, so a level nobody is
-playing eventually loses: `BUSY_FRAMES` in the spec holds a per-level step count
-that stays below each level's idle-death frame, and the test asserts the phase is
-still `play` so a baseline can't silently become a photo of a fail card.
+If it ever comes back, the animations have to be driven off `state.frame`
+rather than the clock first. Not before the party.
 
 ## 9. Budgets — CI-enforced
 
@@ -236,7 +232,7 @@ phone. Before the freeze:
 
 | Workflow | Trigger | Does |
 |---|---|---|
-| `ci.yml` | PR, push | every test in this document: unit/determinism/bot/fuzz (§1–§4, §6) · typecheck + lint · build the image → e2e (§7) + budgets (§9) + the served artifact (§10) · visual regression (§8) · balance report (§5) |
+| `ci.yml` | PR, push | every test in this document: unit/determinism/bot/fuzz (§1–§4, §6) · typecheck + lint · build the image → e2e (§7) + budgets (§9) + the served artifact (§10) · balance report (§5) |
 | `build-and-publish.yml` | push to `main` | builds and pushes `ghcr.io/tpatzelt/birthday-bash:latest` + `:sha-<short>` |
 
 There is no live-URL job. Everything this repo can be held responsible for is

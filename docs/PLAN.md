@@ -69,8 +69,8 @@ TESTING.md is running and every later level reuses it.
 - [ ] `config/gift.ts` wired, base64-encoded (DEPLOY.md §4)
 - [ ] Mercy rules complete: skip after 2 fails, silent auto-ease after 4
 - [ ] `?skip=1`
-- [ ] E2E: full four-level playthrough to the reveal + visual baseline of the
-      reveal screen
+- [ ] E2E: full four-level playthrough to the reveal, asserting the gift details
+      are in the DOM
 - [ ] Deployed
 
 **Exit:** the game is complete and the gift is deliverable. Everything after
@@ -104,7 +104,9 @@ Saturday-afternoon "quick fixes" are how the gift breaks.
 
 If a milestone slips, cut from the top:
 
-1. Visual regression baselines (keep the E2E playthrough)
+1. ~~Visual regression baselines (keep the E2E playthrough)~~ — **cut 13.08**,
+   for flaking on time-based reveal animation rather than catching anything
+   (TESTING.md §8)
 2. Service worker / offline
 3. **L2 Sisyphos** — the most complex to tune for the least mechanical novelty
 4. **L1 Pfand** — a runner is the most replaceable level

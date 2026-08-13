@@ -53,7 +53,7 @@ export function renderLevel(rc: RenderContext, s: AnyLevelState, frame: number):
   ctx.save();
   if (shake > 0) {
     // A deterministic wobble: no RNG in the render path either, so a frozen
-    // frame in a visual test is pixel-stable.
+    // frame draws the same every time.
     ctx.translate(Math.sin(frame * 1.7) * shake, Math.cos(frame * 2.3) * shake * 0.6);
   }
 

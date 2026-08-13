@@ -65,7 +65,6 @@ npm run dev            # Vite dev server + debug harness at /__dev
 npm test               # unit + determinism + bot-beatability + fuzz (headless, ~60 s)
 npm run balance        # bot win-rate/duration report -> reports/balance.md
 npm run e2e            # Playwright against the production Docker image
-npm run visual         # screenshot baselines, in the pinned browser container
 npm run preview:docker # build and run the real shipped image on :8080
 ```
 

@@ -131,8 +131,9 @@ exposed on `window.__bb` **in the shipped image**:
 window.__bb = { loadTape, setSeed, freeze, step, getState, version }
 ```
 
-- `freeze()` stops the rAF loop so Playwright can step deterministically and take
-  stable screenshots — the mechanism that makes visual regression possible at all.
+- `freeze()` stops the rAF loop so Playwright can step the game a known number of
+  frames instead of racing it — how the E2E playthrough drives four levels to the
+  reveal in seconds.
 - This is a *decision to ship a test seam*, not an oversight. The game is a
   static single-player toy with no secrets except the reveal, and being able to
   test the exact artifact that ships is worth far more than hiding it.

@@ -137,7 +137,7 @@ function makeNoise(ctx: AudioContext): AudioBuffer {
   const buf = ctx.createBuffer(1, len, ctx.sampleRate);
   const data = buf.getChannelData(0);
   // A fixed LCG, so the noise is the same every boot — one less thing that can
-  // differ between a visual baseline and a rerun.
+  // differ between one run and the next.
   let x = 22222;
   for (let i = 0; i < len; i++) {
     x = (x * 1664525 + 1013904223) % 4294967296;

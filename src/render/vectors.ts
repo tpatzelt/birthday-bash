@@ -5,7 +5,7 @@
  * that mitigation, generalised: the atlas detects at boot whether a glyph
  * actually rendered, and anything missing or ambiguous is drawn from here
  * instead. On a phone with a full emoji font nothing changes; on one without —
- * or in a headless browser taking visual baselines — the game still reads.
+ * or in a headless browser with no emoji font at all — the game still reads.
  *
  * Everything is drawn into a 1×1 box centred on the origin and scaled by the
  * caller, so a fallback drops in wherever `drawGlyph` is called.

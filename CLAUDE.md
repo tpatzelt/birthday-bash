@@ -17,7 +17,7 @@ you are probably in, and the cut list. **The deadline is real and immovable**
 `src/core/**` is a **pure, deterministic simulation**: no DOM, no `window`, no
 `Math.random()`, no `Date.now()`, fixed `1/60 s` timestep, plain serialisable
 state. The entire test strategy — replayable input tapes, headless bot
-playthroughs, stable visual baselines — collapses the moment something in
+playthroughs, reproducible balance runs — collapses the moment something in
 `core/` reaches for a global. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 If a change seems to need randomness or wall-clock time in the core, thread the
@@ -47,7 +47,6 @@ npm run dev            # Vite dev server; debug harness at /__dev
 npm test               # unit + determinism + bot beatability + fuzz (fast)
 npm run balance        # regenerate reports/balance.md
 npm run e2e            # Playwright against the production Docker image
-npm run visual         # screenshot baselines, in the pinned browser container
 npm run preview:docker # build and run the shipped image on :8080
 ```
 

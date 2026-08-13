@@ -16,7 +16,7 @@ const external = Boolean(process.env.E2E_BASE_URL);
 export default defineConfig({
   testDir: 'tests/e2e',
   timeout: 90_000,
-  expect: { timeout: 15_000, toHaveScreenshot: { maxDiffPixelRatio: 0.002 } },
+  expect: { timeout: 15_000 },
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
