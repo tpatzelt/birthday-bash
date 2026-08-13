@@ -21,9 +21,11 @@ export function canvasHeight(vw: number, vh: number): number {
 
 export const TUNING = {
   pfand: {
-    goalBottles: 26,
+    goalBottles: 38,
     centsPerBottle: 25,
-    lives: 3,
+    // Two hits, not three. The Sonnenallee is the longest level in the game
+    // now, and a third life is what made a good run unloseable.
+    lives: 2,
     playerX: 92,
     groundOffset: 130, // ground y = H - groundOffset
     hitW: 34,
@@ -32,18 +34,18 @@ export const TUNING = {
     jumpImpulse: -760,
     coyoteMs: 100,
     bufferMs: 120,
-    speedBase: 240,
-    speedRamp: 3.4, // px/s per second
-    speedRampMax: 200,
-    gapMin: 210,
-    gapMax: 340,
-    pfandShare: 0.52, // rest are obstacles
+    speedBase: 265,
+    speedRamp: 6.0, // px/s per second
+    speedRampMax: 330,
+    gapMin: 195,
+    gapMax: 305,
+    pfandShare: 0.46, // rest are obstacles
     clusterMin: 1,
     clusterMax: 3,
     arcShare: 0.45, // share of clusters placed on a jump arc
     arcHeight: 96,
     bottleR: 13,
-    invulnMs: 1200,
+    invulnMs: 1100,
     timeCapS: 150,
     obstacles: [
       { kind: 'roller', w: 40, h: 30, weight: 0.4 },
@@ -53,26 +55,26 @@ export const TUNING = {
     /** A jump clearing an obstacle by this little or less pops "Knapp!". */
     knappMarginPx: 14,
     /** Frames of no jump before a Dosendieb can steal an uncollected bottle. */
-    dosendiebIdleS: 3.5,
+    dosendiebIdleS: 3.0,
     /** Rolled once per qualifying idle window, not guaranteed. */
-    dosendiebChance: 0.35,
+    dosendiebChance: 0.45,
   },
 
   sisyphos: {
-    goalPx: 3000,
+    goalPx: 4300,
     lives: 3,
     playerYOffset: 170, // player y = H - playerYOffset
     playerR: 16,
     lerpRate: 12,
-    scrollSpeed: 110,
-    rowSpacing: 240,
+    scrollSpeed: 132,
+    rowSpacing: 220,
     bouncerR: 22,
-    bouncerSpeedMin: 60,
+    bouncerSpeedMin: 78,
     bouncerSpeedMax: 130,
     twoBouncerChance: 0.52,
-    pushBackPx: 260,
-    invulnMs: 1500,
-    shadesEveryPx: 700,
+    pushBackPx: 330,
+    invulnMs: 1450,
+    shadesEveryPx: 850,
     shadesDurationMs: 3500,
     shadesR: 18,
     timeCapS: 120,
@@ -85,18 +87,18 @@ export const TUNING = {
   },
 
   katjes: {
-    goalFish: 28,
+    goalFish: 36,
     lives: 3,
     playerYOffset: 120,
-    playerW: 62,
+    playerW: 56,
     lerpRate: 16,
-    spawnIntervalStart: 0.62,
-    spawnIntervalEnd: 0.34,
-    rampSeconds: 45,
-    fallSpeedStart: 225,
-    fallSpeedEnd: 370,
-    shareFish: 0.65,
-    shareVeg: 0.27,
+    spawnIntervalStart: 0.5,
+    spawnIntervalEnd: 0.26,
+    rampSeconds: 32,
+    fallSpeedStart: 255,
+    fallSpeedEnd: 430,
+    shareFish: 0.6,
+    shareVeg: 0.32,
     shareBonus: 0.08,
     bonusValue: 3,
     /** Carved OUT of shareBonus (must stay < shareBonus), not additive on top. */
@@ -112,23 +114,23 @@ export const TUNING = {
   },
 
   kayak: {
-    goalPx: 5400,
+    goalPx: 6400,
     playerYOffset: 190,
     lerpRate: 6,
     ruheStart: 100,
     ruheMax: 100,
-    panicThreshold: 55, // |vx| above this drains Ruhe
+    panicThreshold: 52, // |vx| above this drains Ruhe
     panicDrain: 0.05,
-    outsideDrain: 7,
+    outsideDrain: 8,
     calmThreshold: 30, // |vx| below this, inside the channel, regains Ruhe
     calmRegen: 5,
     speedInside: 130,
     speedOutside: 78,
-    halfWidthStart: 84,
-    halfWidthEnd: 58,
-    rockEveryPx: 450,
+    halfWidthStart: 80,
+    halfWidthEnd: 55,
+    rockEveryPx: 460,
     rockR: 28,
-    rockHitRuhe: 18,
+    rockHitRuhe: 20,
     rockHitInvulnMs: 600,
     hullR: 15,
     timeCapS: 140,
@@ -147,9 +149,9 @@ export const TUNING = {
     skipAfterFails: 2,
     /** Fails before the level silently auto-eases (DESIGN.md §8.2). */
     easeAfterFails: 4,
-    easeDensityMul: 0.8,
-    easeSpeedMul: 0.9,
-    easeExtraLives: 1,
+    easeDensityMul: 0.65,
+    easeSpeedMul: 0.82,
+    easeExtraLives: 2,
   },
 
   audio: {

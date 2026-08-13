@@ -90,9 +90,6 @@ describe('overlay', () => {
     overlay.showReveal({
       unlocked: 5,
       reducedMotion: true,
-      totalFrames: 60 * 111,
-      bestFrames: 60 * 97,
-      isNewBest: false,
       onDrop: drop,
       onPlayAgain: () => undefined,
       onSelectLevel: () => undefined,
@@ -106,9 +103,6 @@ describe('overlay', () => {
     for (const key of BUILD_LINES) expect(text).toContain(gift(key));
     expect(text).toContain(gift('cardTitle'));
     expect(text).toContain(gift('cardCity'));
-    expect(text).toContain('DEINE ZEIT');
-    expect(text).toContain('1:51');
-    expect(text).toContain('BESTZEIT: 1:37');
     expect(text).toContain(gift('cardTagline'));
     expect(text).toContain(gift('cardLinkLabel'));
     const link = root.querySelector('a.card-link') as HTMLAnchorElement | null;
@@ -122,15 +116,12 @@ describe('overlay', () => {
     expect(root.className).toContain('reveal');
   });
 
-  it('announces a new best instead of the old one', async () => {
+  it('never shows a clear time on the reveal — it is a present, not a scoreboard', async () => {
     vi.useFakeTimers();
     const { root, overlay } = mount();
     overlay.showReveal({
       unlocked: 5,
       reducedMotion: true,
-      totalFrames: 60 * 90,
-      bestFrames: 60 * 90,
-      isNewBest: true,
       onDrop: () => undefined,
       onPlayAgain: () => undefined,
       onSelectLevel: () => undefined,
@@ -139,27 +130,10 @@ describe('overlay', () => {
     });
     await vi.advanceTimersByTimeAsync(6000);
     vi.useRealTimers();
-    expect(root.textContent).toContain('NEUE BESTZEIT');
-  });
-
-  it('has no high score section without a full, unskipped clear', async () => {
-    vi.useFakeTimers();
-    const { root, overlay } = mount();
-    overlay.showReveal({
-      unlocked: 5,
-      reducedMotion: true,
-      totalFrames: null,
-      bestFrames: null,
-      isNewBest: false,
-      onDrop: () => undefined,
-      onPlayAgain: () => undefined,
-      onSelectLevel: () => undefined,
-      afterhourUnlocked: false,
-      onSelectAfterhour: () => undefined,
-    });
-    await vi.advanceTimersByTimeAsync(6000);
-    vi.useRealTimers();
-    expect(root.textContent).not.toContain('DEINE ZEIT');
+    const text = root.textContent ?? '';
+    expect(text).not.toContain('DEINE ZEIT');
+    expect(text).not.toContain('BESTZEIT');
+    expect(root.querySelector('.score')).toBeNull();
   });
 
   it('shows the Afterhour tile, disabled until unlocked', async () => {
@@ -168,9 +142,6 @@ describe('overlay', () => {
     overlay.showReveal({
       unlocked: 5,
       reducedMotion: true,
-      totalFrames: null,
-      bestFrames: null,
-      isNewBest: false,
       onDrop: () => undefined,
       onPlayAgain: () => undefined,
       onSelectLevel: () => undefined,
@@ -190,9 +161,6 @@ describe('overlay', () => {
     overlay.showReveal({
       unlocked: 5,
       reducedMotion: true,
-      totalFrames: 60 * 111,
-      bestFrames: null,
-      isNewBest: true,
       onDrop: () => undefined,
       onPlayAgain: () => undefined,
       onSelectLevel: () => undefined,

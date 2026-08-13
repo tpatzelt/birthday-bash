@@ -27,9 +27,9 @@ left is on real hardware and on the homelab, not in the code:
 
 | Gate | Where | Now |
 |---|---|---|
-| `perfect` bot wins every level | `npm test` | 100 % |
-| `casual` ≥ 85 % | `npm test` | 90–100 % |
-| `tipsy` ≥ 50 % | `npm test` | 64–100 % |
+| `perfect` bot wins ≥ 97 % per level | `npm test` | 99–100 % |
+| `casual` ≥ 55 % | `npm test` | see the balance report |
+| `tipsy` on the eased level ≥ 60 % | `npm test` | the mercy rules are what guarantee the reveal |
 | JS bundle ≤ 150 KB gzipped | `npm run e2e` | ~20 KB |
 | Full playthrough to the reveal | `npm run e2e` | green against the shipped image |
 

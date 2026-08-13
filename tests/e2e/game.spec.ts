@@ -117,8 +117,8 @@ test.describe('the whole gift', () => {
     await expect(overlay).toContainText('Dienstag');
     await expect(overlay).toContainText('WO');
     await expect(overlay).toContainText('WER');
-    // Four real wins, in one save: the high score must appear.
-    await expect(overlay).toContainText('DEINE ZEIT');
+    // Four real wins, and still no clock: the reveal never shows a time.
+    await expect(overlay).not.toContainText('DEINE ZEIT');
 
     const save = await page.evaluate(() => window.__bb.save());
     expect(save.revealed).toBe(true);
@@ -129,8 +129,6 @@ test.describe('the whole gift', () => {
     await page.goto('/?skip=1');
     await expect(page.locator('#overlay')).toHaveClass(/reveal/);
     await expect(page.locator('#overlay')).toContainText('SANDBOX VR', { timeout: 20_000 });
-    // No level was actually won, so there is no time to show — and nothing to
-    // punish him for skipping straight to the present.
     await expect(page.locator('#overlay')).not.toContainText('DEINE ZEIT');
   });
 

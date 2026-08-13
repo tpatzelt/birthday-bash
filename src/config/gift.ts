@@ -36,7 +36,7 @@ const RAW = {
   labelBring: 'TUlUQlJJTkdFTg==',
   valueWhen: 'SXJnZW5kZWluIERpZW5zdGFnLiBGcmFnIG5pY2h0IG5hY2ggZGVtIERhdHVtLg==',
   valueWhere: 'U2FuZGJveCBWUiBCZXJsaW4KVHJlZmZwdW5rdCAxOToxNSB2b3IgZGVtIEVpbmdhbmc=',
-  valueWho: 'RHUsIFRpbSB1bmQgZGVyIFJlc3QgZGVyIENyZXc=',
+  valueWho: 'RnVudGlzY2ggQ3Jldw==',
   valueBring: 'TmljaHRzLiBOdXIgZGljaC4gVW5kIFNvY2tlbi4=',
   outro: 'TGV2ZWwgNTogRnJlZWZhbGwuIFNhbWUgQ3JldywgYW5kZXJlIFJlYWxpdMOkdC4=',
   playAgain: 'Tk9DSE1BTCBTUElFTEVO',

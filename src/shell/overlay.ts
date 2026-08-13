@@ -121,12 +121,6 @@ export type RevealOptions = {
   onSelectLevel: (level: LevelId) => void;
   unlocked: number;
   reducedMotion: boolean;
-  /** Sum of the four best clear times, in frames. null if a level was skipped rather than won. */
-  totalFrames: number | null;
-  /** All-time best total, in frames. null before the first full clear. */
-  bestFrames: number | null;
-  /** Whether this run's total just became the new best. */
-  isNewBest: boolean;
   /** A first full clear (a real win on all four, not `?skip=1`) unlocks the 5th tile. */
   afterhourUnlocked: boolean;
   onSelectAfterhour: () => void;
@@ -267,22 +261,9 @@ export function makeOverlay(root: El): Overlay {
       body.append(details);
       body.append(h('p', 'outro', gift('outro')));
 
-      if (o.totalFrames !== null) {
-        const score = h('div', 'score');
-        score.append(h('p', 'hint', 'DEINE ZEIT'));
-        score.append(h('p', 'time num', formatFrames(o.totalFrames)));
-        score.append(
-          h(
-            'p',
-            'hint',
-            o.isNewBest
-              ? 'NEUE BESTZEIT'
-              : `BESTZEIT: ${formatFrames(o.bestFrames ?? o.totalFrames)}`,
-          ),
-        );
-        body.append(score);
-      }
-
+      // No clear time here on purpose: the reveal is a present, not a
+      // scoreboard. Times are still recorded in the save, and the Afterhour
+      // cards are where a number is welcome.
       body.append(button(gift('playAgain'), o.onPlayAgain, 'primary'));
 
       const levels = h('div', 'levels');

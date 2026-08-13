@@ -62,17 +62,18 @@ Fixed timestep 1/60 s. Lives are **per level** and reset on retry.
 |---|---|
 | **Verb** | Run (auto) + tap to jump |
 | **Input** | Tap anywhere = jump. Nothing else. |
-| **Goal** | Collect **26 Flaschen = 6,50 €** |
-| **Fail** | 3 hits |
-| **Length** | ~40–55 s |
+| **Goal** | Collect **38 Flaschen = 9,50 €** |
+| **Fail** | 2 hits |
+| **Length** | ~45–70 s |
 
 - Player runs in place at `x = 92`; world scrolls left. Ground at `y = H − 130`.
   Hitbox 34 × 46.
 - Gravity `2400 px/s²`, jump impulse `−760 px/s`. **Coyote time 100 ms, jump
   buffer 120 ms** — non-negotiable, this is what makes it feel fair on a
   touchscreen with input latency.
-- Scroll speed `v = 240 + min(200, 3.4·t)` px/s.
-- Spawn gap `rand(180, 320) · (v / 240)` px, so the ramp doesn't secretly also
+- Scroll speed `v = 265 + min(330, 6.0·t)` px/s — the back half of the run is
+  where this level is decided.
+- Spawn gap `rand(195, 305) · (v / 265)` px, so the ramp doesn't secretly also
   compress spacing.
 - Entity mix: 52 % Pfand cluster (1–3 bottles, on the ground or on a jump arc),
   48 % obstacle — E-Roller (40 × 30, ground), Hundehaufen (24 × 16, ground),
@@ -95,18 +96,21 @@ a ding; at 6,50 € a Pfandautomat spits out the Bon.
 |---|---|
 | **Verb** | Steer left/right, advance automatically |
 | **Input** | Drag thumb horizontally |
-| **Goal** | Reach the gate — 3000 px of queue |
+| **Goal** | Reach the gate — 4300 px of queue |
 | **Fail** | 3 rejections |
 | **Length** | ~25–40 s |
 
 - Top-down. Player at `y = H − 170`, `x` lerps toward the pointer at `12/s`,
-  hitbox `r = 16`. World scrolls down at `110 px/s`.
-- Türsteher in rows every 240 world-px, 1–2 per row, moving horizontally at
-  `60–130 px/s` and bouncing off the edges. Hitbox `r = 22`.
-- Contact = "Heute nicht." → lose a life, pushed **back 260 px**, 1.5 s
+  hitbox `r = 16`. World scrolls down at `132 px/s`.
+- Türsteher in rows every 220 world-px, 1–2 per row (56 % are two), moving
+  horizontally at `78–138 px/s` and bouncing off the edges. Hitbox `r = 22`.
+  The upper speed is a fairness limit, not taste: above ~140 px/s a two-bouncer
+  row can close its own gap before it reaches you, and the fuzz test in
+  TESTING.md §4 finds it.
+- Contact = "Heute nicht." → lose a life, pushed **back 330 px**, 1.2 s
   invulnerability. Being pushed back rather than reset is what keeps three
   rejections from meaning "start over".
-- Pickup 🕶️ **Sonnenbrille** roughly every 700 px: 3.5 s of being ignored by
+- Pickup 🕶️ **Sonnenbrille** roughly every 850 px: 3.5 s of being ignored by
   bouncers. Thematically: *du siehst aus, als gehörst du dazu*.
 - Backdrop: the yard — fairy lights, trees, silhouettes, the chimney. Fairy
   lights pulse on the beat (they're the only on-beat visual in the game, which
@@ -123,13 +127,13 @@ a ding; at 6,50 € a Pfandautomat spits out the Bon.
 |---|---|
 | **Verb** | Catch |
 | **Input** | Drag thumb horizontally |
-| **Goal** | 28 Heringe |
+| **Goal** | 36 Heringe |
 | **Fail** | 3 vegetables caught |
 | **Length** | ~25–40 s |
 
-- Player (an open Tüte) at `y = H − 120`, width 62, lerps to pointer at `16/s`.
-- Spawn interval `0.62 s → 0.34 s` over 45 s; fall speed `225 → 370 px/s`.
-- Mix: 62 % Hering (+1), 30 % Gemüse (−1 life), 8 % Lakritz-Bonus (+3).
+- Player (an open Tüte) at `y = H − 120`, width 56, lerps to pointer at `16/s`.
+- Spawn interval `0.50 s → 0.26 s` over 32 s; fall speed `255 → 430 px/s`.
+- Mix: 60 % Hering (+1), 32 % Gemüse (−1 life), 8 % Lakritz-Bonus (+3).
 - Vegetables are visually **loud and unmistakable** (broccoli, carrot, aubergine
   — round, green/orange, tumbling) versus the flat black-and-white herring. At
   340 px/s on a small screen, silhouette contrast is the only thing that makes
@@ -151,23 +155,24 @@ the kayak simulator he'll actually be near.
 |---|---|
 | **Verb** | Do almost nothing, gracefully |
 | **Input** | Drag — but gently |
-| **Goal** | 5400 px downriver (~46 s) |
+| **Goal** | 6400 px downriver (~55 s) |
 | **Fail** | **Ruhe** hits 0 |
 | **Length** | ~40–55 s |
 
 - River channel centre: `cx(y) = W/2 + 72·sin(y·0.0042) + 34·sin(y·0.0113 + 1.7)`.
-  Channel half-width `84 px`, narrowing to `58 px` over the level.
+  Channel half-width `80 px`, narrowing to `55 px` over the level — the narrowing
+  is what makes L4 hard; the rock field is deliberately kept thin.
 - Kayak at `y = H − 190`; `x` follows the pointer at a deliberately sluggish
   lerp of `6/s`. The sluggishness *is* the mechanic — it makes over-correcting
   the natural mistake.
 - **Ruhe meter**, 0–100, starts at 100:
-  - `panic = max(0, |vx| − 55)` → `Ruhe −= panic · 0.05 · dt`
-  - outside the channel → `Ruhe −= 7 · dt`
+  - `panic = max(0, |vx| − 52)` → `Ruhe −= panic · 0.05 · dt`
+  - outside the channel → `Ruhe −= 8 · dt`
   - inside the channel **and** `|vx| < 30` → `Ruhe += 5 · dt` (cap 100)
 - Downstream speed `130 px/s` inside the channel, `78 px/s` outside. Drifting
   wrong is *slow*, not fatal — the meter punishes flailing, not error.
-- Rocks roughly every 520 px, placed near a channel edge, `r = 26`. Contact:
-  `Ruhe −16` + screen shake (suppressed under `prefers-reduced-motion`).
+- Rocks roughly every 460 px, placed near a channel edge, `r = 28`. Contact:
+  `Ruhe −20` + screen shake (suppressed under `prefers-reduced-motion`).
 - Fail copy: **„Zu hektisch. Atme."** — retry is instant, no card to dismiss.
 - Win: the music has been stripping away the whole level; at 100 % a **whale
   breaches** across the full width, and the screen goes white.
@@ -271,8 +276,10 @@ He must reach the reveal. Non-negotiable, encoded as rules:
 1. **Fail twice on a level → a „Überspringen" button appears** on the fail card,
    alongside retry. Never offered before the second fail (it would read as the
    game not believing in him).
-2. **Fail four times → the level auto-eases**: −20 % obstacle density, −10 %
-   speed, +1 life. Silently. No "easy mode" label.
+2. **Fail four times → the level auto-eases**: −35 % obstacle density, −18 %
+   speed, +2 lives. Silently. No "easy mode" label. This is where the promise
+   lives: the raw levels are allowed to be genuinely hard *because* the ease is
+   strong, and TESTING.md §3 gates the eased level, not the raw one.
 3. Level progress is persisted, so a phone call or a dead battery costs at most
    the current level.
 4. No global lives, no game over, no score minimum. The only terminal state is

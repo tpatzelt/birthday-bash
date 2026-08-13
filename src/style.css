@@ -337,22 +337,6 @@ button.primary:active {
   text-transform: uppercase;
 }
 
-.score {
-  text-align: center;
-  margin: 0 0 18px;
-}
-
-.score .hint {
-  margin: 0;
-}
-
-.score .time {
-  font-size: clamp(30px, 11vw, 42px);
-  font-weight: 800;
-  color: var(--chalk);
-  margin: 4px 0;
-}
-
 /* --- rotate hint --------------------------------------------------------- */
 
 #rotate {

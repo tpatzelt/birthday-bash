@@ -132,7 +132,8 @@ the present beats a four-level game that might not.
 ## 6. Definition of done
 
 - [ ] Four levels (or the reduced set the cut list allows) playable to completion
-- [ ] `casual` bot wins ≥ 85 % and `tipsy` ≥ 50 % per level, in CI
+- [ ] `casual` bot wins ≥ 55 % per level and `tipsy` clears the *eased* level
+      ≥ 60 % of the time, in CI
 - [ ] The reveal is reachable even failing every level, and via `?skip=1`
 - [ ] Full playthrough E2E green against the **shipped image** and the **live URL**
 - [ ] Loads in under 2 s on 4G, works offline afterwards

@@ -272,16 +272,15 @@ function goReveal(fresh: boolean): void {
   sim = null;
   simAH = null;
   save = markRevealed(save);
-  const isNewBest = updateBestTotal(save);
+  // Still recorded (the save keeps every clear time); simply not shown — the
+  // reveal screen is a present, not a scoreboard.
+  updateBestTotal(save);
   persist();
   setScene(scheduler, 'reveal', !fresh);
   if (fresh && !reducedMotion) playRiser(engine, 3.2);
   overlay.showReveal({
     unlocked: save.unlocked,
     reducedMotion,
-    totalFrames: totalTimeFrames(save),
-    bestFrames: save.bestTotalFrames,
-    isNewBest,
     afterhourUnlocked: afterhourUnlocked(),
     onDrop: () => {
       playDrop(engine);

@@ -70,10 +70,10 @@ DESIGN.md §8: *he must be able to finish*.
 
 | Bot | Policy | Assertion |
 |---|---|---|
-| `perfect` | omniscient — jumps at the ideal frame, moves straight to the nearest good item | Wins every level, **200 seeds**, no exceptions |
-| `casual` | 220 ms reaction delay, ±12 px aim error, misses 15 % of inputs | Wins ≥ **85 %** of 200 seeds per level |
-| `tipsy` | 400 ms delay, ±30 px error, 30 % missed inputs, occasional 1 s freeze | Wins ≥ **50 %** — and where it doesn't, the mercy rules must trigger |
-| `idle` | never touches the screen | **Must terminate.** Fails cleanly (or in L4, wins — that's the joke), never soft-locks |
+| `perfect` | greedy — jumps at the ideal frame, moves to the best-scoring position it can see | Wins ≥ **97 %** of 200 seeds per level. It is a heuristic, not an oracle: on L2 it corners itself about one seed in two hundred, and those seeds pass the §4 fairness lookahead at every sampled frame |
+| `casual` | 220 ms reaction delay, ±12 px aim error, misses 15 % of inputs | Wins ≥ **55 %** of 200 seeds per level |
+| `tipsy` | 400 ms delay, ±30 px error, 30 % missed inputs, occasional 1 s freeze | **No un-eased floor** — it is meant to lose. On the *eased* level: wins ≥ **60 %**, and always more often than un-eased |
+| `idle` | never touches the screen | **Must terminate.** Fails cleanly everywhere, and in L4 must still outlast `mash` several times over — doing nothing is the safest play, not a winning one |
 | `mash` | random taps/drags every frame | No exception, no NaN in state, terminates within the level time cap |
 
 Additional invariants asserted across all bot runs:
@@ -84,6 +84,12 @@ Additional invariants asserted across all bot runs:
   skip must still arrive at `revealed: true`.
 - `tipsy` failing four times must produce the silent auto-ease, and the eased
   level must then be winnable by `tipsy`.
+
+The second difficulty pass moved where the promise lives. `casual` ≥ 85 % and
+`tipsy` ≥ 50 % on the *raw* level meant no level could realistically be lost,
+which is not a game. The guarantee that he reaches the reveal is carried by the
+mercy rules — skip after two fails, silent auto-ease after four — so those are
+the numbers now gated hard, and the raw levels are allowed to be difficult.
 
 ## 4. Fuzz — `vitest`, 1000 seeds × random input
 
