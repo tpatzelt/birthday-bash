@@ -8,7 +8,14 @@
 
 import { sanitizeAfterhourScore, type AfterhourScore } from '../core/afterhourScore.js';
 
-export const AFTERHOUR_KEY = 'bb.afterhour.v1';
+export const AFTERHOUR_KEY = 'bb.afterhour.v2';
+
+/**
+ * The pre-board single-best blob. Read when v2 is absent so a device that
+ * already has a best run keeps it as the board's first row; migrated in
+ * sanitizeAfterhourScore, and never written again.
+ */
+export const AFTERHOUR_LEGACY_KEY = 'bb.afterhour.v1';
 
 let memory: string | null = null;
 let warned = false;
@@ -32,7 +39,8 @@ function backing(): Storage | null {
 export function loadAfterhourScore(): AfterhourScore {
   let raw: string | null = null;
   try {
-    raw = backing()?.getItem(AFTERHOUR_KEY) ?? memory;
+    const store = backing();
+    raw = store?.getItem(AFTERHOUR_KEY) ?? store?.getItem(AFTERHOUR_LEGACY_KEY) ?? memory;
   } catch {
     raw = memory;
   }

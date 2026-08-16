@@ -9,6 +9,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { gift, dec, BUILD_LINES, DETAIL_ROWS } from '../../src/config/gift.js';
 import { LEVEL_ORDER } from '../../src/core/input.js';
 import { makeOverlay, LEVEL_FAIL, LEVEL_TITLE } from '../../src/shell/overlay.js';
+import { ANON_NAME } from '../../src/core/afterhourScore.js';
 import { makeViewport, toLogical } from '../../src/render/canvas.js';
 import { W } from '../../src/config/tuning.js';
 
@@ -175,18 +176,84 @@ describe('overlay', () => {
 
   it('shows the Afterhour intro and fail cards', () => {
     const { root, overlay } = mount();
-    overlay.showAfterhourIntro({ bestLoops: 2, bestFrames: 600, onStart: () => undefined, onBack: () => undefined });
+    overlay.showAfterhourIntro({
+      bestLoops: 2,
+      bestFrames: 600,
+      hasBoard: true,
+      onStart: () => undefined,
+      onBack: () => undefined,
+      onBoard: () => undefined,
+    });
     expect(root.textContent).toContain('AFTERHOUR');
+    expect(root.textContent).toContain('BESTENLISTE');
 
     overlay.showAfterhourFail({
       loops: 3,
       frames: 900,
+      rank: 0,
       isNewBest: true,
       bestLoops: 3,
+      defaultName: ANON_NAME,
+      hasBoard: true,
+      onSubmitName: () => undefined,
       onRetry: () => undefined,
       onTitle: () => undefined,
+      onBoard: () => undefined,
     });
     expect(root.textContent).toContain('NEUE BESTE RUNDE');
+  });
+
+  it('asks for initials only when the run actually made the board', () => {
+    const { root, overlay } = mount();
+    const base = {
+      loops: 0,
+      frames: 120,
+      isNewBest: false,
+      bestLoops: 9,
+      defaultName: 'JP',
+      hasBoard: true,
+      onSubmitName: () => undefined,
+      onRetry: () => undefined,
+      onTitle: () => undefined,
+      onBoard: () => undefined,
+    };
+
+    overlay.showAfterhourFail({ ...base, rank: null });
+    expect(root.querySelector('input.initials')).toBeNull();
+
+    let submitted: string | null = null;
+    overlay.showAfterhourFail({ ...base, rank: 2, onSubmitName: (n) => (submitted = n) });
+    const input = root.querySelector('input.initials') as HTMLInputElement;
+    expect(root.textContent).toContain('PLATZ 3');
+    expect(input.value).toBe('JP'); // pre-filled with the last initials used
+    input.value = 'abc';
+    (root.querySelector('button.primary') as HTMLButtonElement).click();
+    expect(submitted).toBe('abc'); // core sanitises it; the card does not gate it
+  });
+
+  it('shows the board, marking the run that just ended', () => {
+    const { root, overlay } = mount();
+    overlay.showAfterhourBoard({
+      entries: [
+        { name: 'JP', loops: 4, frames: 3600, at: 2 },
+        { name: 'TIM', loops: 1, frames: 900, at: 1 },
+      ],
+      highlight: 1,
+      onRetry: () => undefined,
+      onBack: () => undefined,
+    });
+    const rows = root.querySelectorAll('.board-row:not(.head)');
+    expect(rows).toHaveLength(2);
+    expect(rows[0].textContent).toContain('JP');
+    expect(rows[0].textContent).toContain('1:00'); // 3600 frames at 60/s
+    expect(rows[1].classList.contains('is-new')).toBe(true);
+  });
+
+  it('has something to say about an empty board', () => {
+    const { root, overlay } = mount();
+    overlay.showAfterhourBoard({ entries: [], highlight: null, onRetry: () => undefined, onBack: () => undefined });
+    expect(root.querySelector('.board-row')).toBeNull();
+    expect(root.textContent).toContain('Noch keine Runde');
   });
 
   it('hides cleanly', () => {

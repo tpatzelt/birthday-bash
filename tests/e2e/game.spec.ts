@@ -26,7 +26,10 @@ type BB = {
   gotoAfterhour: (seed?: number) => void;
   reveal: () => void;
   save: () => { unlocked: number; revealed: boolean; muted: boolean };
-  afterhourSave: () => { bestLoops: number; bestFrames: number };
+  afterhourSave: () => {
+    entries: Array<{ name: string; loops: number; frames: number; at: number }>;
+    lastName: string;
+  };
 };
 
 declare global {
@@ -154,14 +157,32 @@ test.describe('the whole gift', () => {
     await page.locator('#overlay button.primary').click(); // LOS
     await expect(overlay).not.toHaveClass(/on/);
 
+    // No input at all: the shared strike pool empties and the run ends.
     await page.evaluate(() => {
       window.__bb.freeze();
       window.__bb.gotoAfterhour(1);
-      window.__bb.step(40 * 60);
+      window.__bb.step(3 * 60 * 60);
       window.__bb.unfreeze();
     });
     const state = await page.evaluate(() => window.__bb.getState());
-    expect(state.phase === 'afterhour' || state.phase === 'afterhourFail').toBe(true);
+    expect(state.phase).toBe('afterhourFail');
+
+    // The board: initials go on the run that was already filed, and the row
+    // shows up marked on the next card.
+    await expect(overlay).toContainText('Runden überlebt');
+    await page.locator('#overlay input.initials').fill('JP');
+    await page.locator('#overlay button.primary').click(); // EINTRAGEN
+    await expect(overlay).toContainText('BESTENLISTE');
+    await expect(page.locator('#overlay .board-row.is-new')).toContainText('JP');
+
+    const board = await page.evaluate(() => window.__bb.afterhourSave());
+    expect(board.entries[0].name).toBe('JP');
+    expect(board.lastName).toBe('JP');
+
+    // And it survives a reload, which is the only thing a local board promises.
+    await page.reload();
+    await ready(page);
+    expect(await page.evaluate(() => window.__bb.afterhourSave().entries[0].name)).toBe('JP');
   });
 
   test('offers "zum Geschenk" on the title screen once seen', async ({ page }) => {

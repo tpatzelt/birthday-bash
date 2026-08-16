@@ -10,6 +10,7 @@ import { BUILD_LINES, DETAIL_ROWS, gift } from '../config/gift.js';
 import { TUNING } from '../config/tuning.js';
 import { LEVEL_ORDER, type LevelId } from '../core/input.js';
 import { euros } from '../core/levels/pfand.js';
+import { ANON_NAME, NAME_MAX, type AfterhourEntry } from '../core/afterhourScore.js';
 import { buildShareText, copyShareText } from './share.js';
 
 /** The Pfand goal as the Bon reads it — derived, so the copy can't drift from tuning.ts. */
@@ -62,6 +63,10 @@ const AFTERHOUR_SUB = 'Kein Ende. Kein Türsteher, der dich noch aufhält.';
 const AFTERHOUR_LOCKED_HINT = 'Erst alle vier schaffen.';
 const AFTERHOUR_HOWTO = 'Pfand, Sisyphos, Katjes, Kayak — auf Wiederholung, schneller bei jeder Runde.';
 const AFTERHOUR_FAIL = 'Vorbei. Die Nacht ist trotzdem gelaufen.';
+const BOARD_TITLE = 'BESTENLISTE';
+const BOARD_EMPTY = 'Noch keine Runde überlebt. Auch eine Aussage.';
+/** Local by design: no backend, one phone (see afterhourScore.ts). */
+const BOARD_FOOTER = 'Nur auf diesem Handy. Kein Server, keine Cloud, kein Kommentar.';
 
 type El = HTMLElement;
 
@@ -94,6 +99,7 @@ export type Overlay = {
   showReveal(o: RevealOptions): void;
   showAfterhourIntro(o: AfterhourIntroOptions): void;
   showAfterhourFail(o: AfterhourFailOptions): void;
+  showAfterhourBoard(o: AfterhourBoardOptions): void;
   visible(): boolean;
 };
 
@@ -129,17 +135,35 @@ export type RevealOptions = {
 export type AfterhourIntroOptions = {
   bestLoops: number;
   bestFrames: number;
+  hasBoard: boolean;
   onStart: () => void;
   onBack: () => void;
+  onBoard: () => void;
 };
 
 export type AfterhourFailOptions = {
   loops: number;
   frames: number;
+  /** 0-based row the run landed on, or null if it missed the board. */
+  rank: number | null;
   isNewBest: boolean;
   bestLoops: number;
+  /** Pre-fills the initials field with whatever was typed last. */
+  defaultName: string;
+  hasBoard: boolean;
+  /** Only offered when `rank` is set; the run is already recorded by then. */
+  onSubmitName: (name: string) => void;
   onRetry: () => void;
   onTitle: () => void;
+  onBoard: () => void;
+};
+
+export type AfterhourBoardOptions = {
+  entries: readonly AfterhourEntry[];
+  /** Row to mark as the run that just happened. */
+  highlight: number | null;
+  onRetry: () => void;
+  onBack: () => void;
 };
 
 /** Frames (60/s) as m:ss, tabular. */
@@ -310,6 +334,7 @@ export function makeOverlay(root: El): Overlay {
       }
       el.append(h('div', 'spacer'));
       el.append(button('LOS', o.onStart, 'primary'));
+      if (o.hasBoard) el.append(button(BOARD_TITLE, o.onBoard, 'quiet'));
       el.append(button('ZURÜCK', o.onBack, 'quiet'));
     },
 
@@ -319,9 +344,25 @@ export function makeOverlay(root: El): Overlay {
       el.append(h('h1', undefined, AFTERHOUR_FAIL));
       el.append(h('p', undefined, `${o.loops} Runden überlebt · ${formatFrames(o.frames)}`));
       if (o.isNewBest) el.append(h('p', 'hint', 'NEUE BESTE RUNDE'));
+      else if (o.rank !== null) el.append(h('p', 'hint', `PLATZ ${o.rank + 1} AUF DER BESTENLISTE`));
       else if (o.bestLoops > 0) el.append(h('p', 'hint', `BESTE RUNDE: ${o.bestLoops}`));
       el.append(h('div', 'spacer'));
-      el.append(button('NOCHMAL', o.onRetry, 'primary'));
+
+      // The run is already on the board at this point — the initials are a
+      // rename, so closing the card without typing loses nothing.
+      if (o.rank !== null) {
+        const input = initialsInput(o.defaultName, () => o.onSubmitName(input.value));
+        const row = h('div', 'initials-row');
+        row.append(input);
+        row.append(button('EINTRAGEN', () => o.onSubmitName(input.value), 'primary'));
+        el.append(h('p', 'hint', 'KÜRZEL — DREI ZEICHEN'));
+        el.append(row);
+        el.append(button('NOCHMAL', o.onRetry, 'quiet'));
+      } else {
+        el.append(button('NOCHMAL', o.onRetry, 'primary'));
+        if (o.hasBoard) el.append(button(BOARD_TITLE, o.onBoard, 'quiet'));
+      }
+
       const shareBtn = button('SCORE TEILEN', () => {
         void copyShareText(buildShareText(o.loops)).then((ok) => {
           shareBtn.textContent = ok ? 'KOPIERT' : buildShareText(o.loops);
@@ -330,7 +371,62 @@ export function makeOverlay(root: El): Overlay {
       el.append(shareBtn);
       el.append(button('ZUM TITEL', o.onTitle, 'quiet'));
     },
+
+    showAfterhourBoard(o) {
+      const el = reset();
+      el.append(h('p', 'eyebrow', AFTERHOUR_TITLE));
+      el.append(h('h1', undefined, BOARD_TITLE));
+      el.append(h('div', 'rule'));
+      if (o.entries.length === 0) el.append(h('p', undefined, BOARD_EMPTY));
+      else el.append(boardTable(o.entries, o.highlight));
+      el.append(h('p', 'hint board-note', BOARD_FOOTER));
+      el.append(h('div', 'spacer'));
+      el.append(button('NOCHMAL', o.onRetry, 'primary'));
+      el.append(button('ZURÜCK', o.onBack, 'quiet'));
+    },
   };
+}
+
+/** Three uppercase glyphs; the core sanitiser has the final say on the value. */
+function initialsInput(defaultName: string, onEnter: () => void): HTMLInputElement {
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'initials';
+  input.maxLength = NAME_MAX;
+  input.value = defaultName === ANON_NAME ? '' : defaultName;
+  input.placeholder = ANON_NAME;
+  input.autocapitalize = 'characters';
+  input.autocomplete = 'off';
+  input.spellcheck = false;
+  input.setAttribute('aria-label', 'Kürzel');
+  input.addEventListener('input', () => {
+    input.value = input.value.toUpperCase().slice(0, NAME_MAX);
+  });
+  input.addEventListener('keydown', (ev) => {
+    if ((ev as KeyboardEvent).key === 'Enter') {
+      ev.preventDefault();
+      onEnter();
+    }
+  });
+  return input;
+}
+
+function boardTable(entries: readonly AfterhourEntry[], highlight: number | null): El {
+  const board = h('div', 'board');
+  const head = h('div', 'board-row head');
+  head.append(h('span', 'rank', '#'), h('span', 'name', 'KÜRZEL'), h('span', 'loops', 'RUNDEN'), h('span', 'time', 'ZEIT'));
+  board.append(head);
+  entries.forEach((e, i) => {
+    const row = h('div', i === highlight ? 'board-row is-new' : 'board-row');
+    row.append(
+      h('span', 'rank num', String(i + 1)),
+      h('span', 'name', e.name),
+      h('span', 'loops num', String(e.loops)),
+      h('span', 'time num', formatFrames(e.frames)),
+    );
+    board.append(row);
+  });
+  return board;
 }
 
 function typeOn(el: El, text: string, charMs: number, later: (ms: number, fn: () => void) => void): void {

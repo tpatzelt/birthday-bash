@@ -35,7 +35,13 @@ import {
 } from '../core/progress.js';
 import { hashState } from '../core/state.js';
 import { create as createAfterhour, step as stepAfterhour, loopsSurvived, type AfterhourState } from '../core/afterhour.js';
-import { recordAfterhourRun, type AfterhourScore } from '../core/afterhourScore.js';
+import {
+  ANON_NAME,
+  bestEntry,
+  recordAfterhourRun,
+  renameEntry,
+  type AfterhourScore,
+} from '../core/afterhourScore.js';
 
 import { buildAtlas } from '../render/atlas.js';
 import { loadFace } from '../render/face.js';
@@ -55,7 +61,17 @@ import { loadAfterhourScore, saveAfterhourScore } from './afterhourStorage.js';
 declare const __DEV_HARNESS__: boolean;
 declare const __BUILD_SHA__: string;
 
-type Phase = 'title' | 'intro' | 'play' | 'fail' | 'win' | 'reveal' | 'afterhourIntro' | 'afterhour' | 'afterhourFail';
+type Phase =
+  | 'title'
+  | 'intro'
+  | 'play'
+  | 'fail'
+  | 'win'
+  | 'reveal'
+  | 'afterhourIntro'
+  | 'afterhour'
+  | 'afterhourFail'
+  | 'afterhourBoard';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const overlayEl = document.getElementById('overlay') as HTMLElement;
@@ -173,11 +189,27 @@ function goAfterhourIntro(): void {
   phase = 'afterhourIntro';
   sim = null;
   simAH = null;
+  const best = bestEntry(afterhourScore);
   overlay.showAfterhourIntro({
-    bestLoops: afterhourScore.bestLoops,
-    bestFrames: afterhourScore.bestFrames,
+    bestLoops: best?.loops ?? 0,
+    bestFrames: best?.frames ?? 0,
+    hasBoard: afterhourScore.entries.length > 0,
     onStart: () => startAfterhour(),
     onBack: () => goReveal(false),
+    onBoard: () => goAfterhourBoard(null),
+  });
+}
+
+/** `highlight` marks the run that just happened, when there is one. */
+function goAfterhourBoard(highlight: number | null): void {
+  phase = 'afterhourBoard';
+  sim = null;
+  simAH = null;
+  overlay.showAfterhourBoard({
+    entries: afterhourScore.entries,
+    highlight,
+    onRetry: () => startAfterhour(),
+    onBack: () => goAfterhourIntro(),
   });
 }
 
@@ -197,16 +229,34 @@ function goAfterhourFail(): void {
   phase = 'afterhourFail';
   const loops = loopsSurvived(simAH);
   const frames = simAH.frame;
-  const { isNewBest } = recordAfterhourRun(afterhourScore, loops, frames);
+  // Filed nameless and persisted immediately: the initials prompt is a
+  // rename, so quitting the card can never cost him the run.
+  const { rank, isNewBest } = recordAfterhourRun(afterhourScore, {
+    name: ANON_NAME,
+    loops,
+    frames,
+    at: Date.now(),
+  });
   saveAfterhourScore(afterhourScore);
   simAH = null;
   overlay.showAfterhourFail({
     loops,
     frames,
+    rank,
     isNewBest,
-    bestLoops: afterhourScore.bestLoops,
+    bestLoops: bestEntry(afterhourScore)?.loops ?? 0,
+    defaultName: afterhourScore.lastName,
+    hasBoard: afterhourScore.entries.length > 0,
+    onSubmitName: (name) => {
+      if (rank !== null) {
+        renameEntry(afterhourScore, rank, name);
+        saveAfterhourScore(afterhourScore);
+      }
+      goAfterhourBoard(rank);
+    },
     onRetry: () => startAfterhour(),
     onTitle: () => goTitle(),
+    onBoard: () => goAfterhourBoard(rank),
   });
 }
 
@@ -433,7 +483,13 @@ const bb = {
     resetStepper(stepper);
   },
   step(n = 1): void {
-    for (let i = 0; i < n; i++) fixedStep();
+    // Dispatch per tick, like the dev harness: the phase can flip mid-run
+    // (afterhour → afterhourFail), and stepping the wrong sim silently
+    // no-ops, which is worse than useless in a test.
+    for (let i = 0; i < n; i++) {
+      if (phase === 'afterhour') fixedStepAfterhour();
+      else fixedStep();
+    }
     draw();
   },
   getState(): unknown {

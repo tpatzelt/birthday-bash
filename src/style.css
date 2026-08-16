@@ -234,6 +234,108 @@ button.primary:active {
   color: var(--haze);
 }
 
+/* --- the Afterhour board ------------------------------------------------- */
+
+.board {
+  margin-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--haze) 22%, transparent);
+}
+
+.board-row {
+  display: grid;
+  /* Rank and name left, the two numbers right — one column set for every row,
+     so the digits line up down the card. */
+  grid-template-columns: 2.2em 1fr 3.4em 4em;
+  gap: 16px;
+  align-items: baseline;
+  padding: 11px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--haze) 14%, transparent);
+  font-size: 15px;
+  color: var(--chalk);
+}
+
+.board-row .loops,
+.board-row .time {
+  text-align: right;
+}
+
+.board-row .rank,
+.board-row .name {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.board-row.head {
+  padding: 8px 0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--haze) 70%, transparent);
+}
+
+.board-row.head .rank,
+.board-row.head .name {
+  letter-spacing: 0.22em;
+}
+
+/* Wide tracking on two right-aligned headers reads as one run-on word
+   ("RUNDENZEIT") at this size — the column gap alone is not enough. */
+.board-row.head .loops,
+.board-row.head .time {
+  letter-spacing: 0.14em;
+}
+
+.board-note {
+  margin-top: 14px;
+}
+
+/* The run that just ended, so he can find himself without reading the list. */
+.board-row.is-new {
+  color: var(--pink);
+  font-weight: 800;
+}
+
+.initials-row {
+  display: grid;
+  grid-template-columns: 5.5em 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.initials-row button {
+  margin: 0;
+}
+
+input.initials {
+  width: 100%;
+  padding: 17px 0;
+  border: 1px solid var(--chalk);
+  border-radius: 0;
+  background: transparent;
+  color: var(--chalk);
+  font-family: var(--numerals);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-align: center;
+  text-transform: uppercase;
+  /* The body forbids both globally for the canvas; the one text field in the
+     game has to opt back in or it cannot be focused or typed into on a phone. */
+  user-select: text;
+  -webkit-user-select: text;
+  touch-action: manipulation;
+}
+
+input.initials::placeholder {
+  color: color-mix(in srgb, var(--haze) 45%, transparent);
+}
+
+input.initials:focus {
+  outline: none;
+  border-color: var(--pink);
+}
+
 /* --- the reveal ---------------------------------------------------------- */
 
 #overlay.reveal {
