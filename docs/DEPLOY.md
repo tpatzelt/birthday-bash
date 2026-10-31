@@ -25,12 +25,12 @@ Static output served by nginx. Multi-stage, small, no runtime environment.
 
 ```
 FROM node:22-alpine AS build      # npm ci && npm run build -> /app/dist
-FROM nginx:1.27-alpine            # dist -> /usr/share/nginx/html + nginx.conf
+FROM nginx:1.30-alpine            # dist -> /usr/share/nginx/html + nginx.conf
 ```
 
 Notes that matter:
 
-- **Pin the base images** to Renovate-parsable tags (`1.27-alpine`, not
+- **Pin the base images** to Renovate-parsable tags (`1.30-alpine`, not
   `alpine`). A tag Renovate can't order is a tag that silently rots for years.
 - nginx config: long `immutable` cache on hashed assets, **`no-cache` on
   `index.html` and `sw.js`** — otherwise a fix pushed on the morning of the
